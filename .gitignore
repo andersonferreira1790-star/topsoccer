@@ -1,0 +1,28 @@
+# Arquivos de backup
+*.backup
+*.backup-*
+*-old.*
+*-bugado.*
+*-teste.*
+
+# Diretórios de backup
+backup_*/
+
+# Arquivos temporários e de teste
+test.html
+teste-simples.html
+debug.html
+debug-console.html
+painel-teste.html
+painel-limpo.html
+
+# Documentação de fixes (opcional - remova se quiser versionar)
+*.md
+!README.md
+
+# Arquivos SQL de correção temporária
+*.sql
+
+# Scripts de debug
+force-cache-bust.sh
+*.txt

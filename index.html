@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <!-- COMANDO ANTI-CACHE -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="-1">
+    <meta name="theme-color" content="#050505">
+
+    <title>Top Soccer | Elite Performance</title>
+    
+    <!-- Link para o CSS Externo -->
+    <link rel="stylesheet" href="styles.css?v=20260207001">
+    
+    <!-- Bibliotecas Externas -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+
+    <!-- NAV -->
+    <nav class="top-nav px-8">
+        <div class="flex justify-between items-center w-full max-w-6xl mx-auto">
+            <h1 class="font-impact text-2xl tracking-tighter">TOP <span class="text-[#FF4500]">SOCCER</span></h1>
+            <div id="userStatusBtn" class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs cursor-pointer" onclick="checkAuthAndOpen()">👤</div>
+        </div>
+    </nav>
+
+    <!-- SLIDER -->
+    <section class="hero-slider">
+        <div class="slide active"><img src="https://images.unsplash.com/photo-1574629810360-7efbbe195018?q=80&w=1500" alt="Arena"></div>
+        <div class="slide"><img src="https://images.unsplash.com/photo-1510566337590-2fc1f21d0faa?q=80&w=1500" alt="Jogo"></div>
+        <div class="hero-overlay">
+            <span class="text-[10px] font-black tracking-[0.4em] uppercase text-[#FF4500] mb-2">Performance</span>
+            <h2 class="font-impact text-6xl leading-[0.9]">DOMINE A<br>QUADRA</h2>
+        </div>
+    </section>
+
+    <!-- CONTEÚDO -->
+    <main class="cards-container p-6 max-w-md mx-auto space-y-8 pb-32">
+        <!-- CARD ARENA -->
+        <div class="glass-card" onclick="abrirCalendario('Arena Principal')">
+            <div class="flex justify-between items-center">
+                <span class="text-[10px] font-black tracking-widest uppercase text-gray-500">Unidade Bebedouro</span>
+                <div class="w-2 h-2 bg-[#FF4500] rounded-full animate-pulse"></div>
+            </div>
+            <h2 class="font-impact text-4xl italic mt-6 mb-2">ARENA<br>PLAY</h2>
+            
+            <div class="chip-grid">
+                <div class="chip selected" onclick="selecionarQuadra('Quadra 1', this); event.stopPropagation();">Quadra 1</div>
+                <div class="chip" onclick="selecionarQuadra('Quadra 2', this); event.stopPropagation();">Quadra 2</div>
+                <div class="chip" onclick="selecionarQuadra('Quadra 3', this); event.stopPropagation();">Quadra 3</div>
+                <div class="chip col-span-2" onclick="selecionarQuadra('Campo Oficial', this); event.stopPropagation();">Campo Oficial</div>
+                <div class="chip" onclick="selecionarQuadra('Mini Campo', this); event.stopPropagation();">Mini Campo</div>
+            </div>
+            
+            <button onclick="abrirCalendario('Arena')" class="w-full bg-[#FF4500] text-black font-black py-5 rounded-2xl mt-8 uppercase text-xs tracking-[0.2em]">
+                Ver Disponibilidade
+            </button>
+        </div>
+
+        <!-- CARD LAZER -->
+        <div class="glass-card" style="border-color: rgba(57, 255, 20, 0.2);" onclick="abrirCalendario('Edícula VIP')">
+            <h2 class="font-impact text-4xl italic mt-2 mb-2 text-[#39FF14]">EDÍCULA<br>VIP</h2>
+            <p class="text-xs text-gray-400 font-bold uppercase tracking-widest">Piscina & Churrasqueira</p>
+            <button class="w-full border-2 border-[#39FF14] text-[#39FF14] font-black py-5 rounded-2xl mt-8 uppercase text-xs tracking-[0.2em]">
+                Consultar Data
+            </button>
+        </div>
+    </main>
+
+    <!-- CALENDÁRIO VITRINE -->
+    <div class="modal-overlay" id="calendarModal">
+        <div class="calendar-sheet">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Disponibilidade</span>
+                    <h2 class="font-impact text-2xl italic text-white" id="modalTitle">ARENA</h2>
+                    <span id="quadraSelecionadaDisplay" class="text-xs text-[#FF4500] font-bold">Quadra 1</span>
+                </div>
+                <button onclick="fecharModal('calendarModal')" class="bg-white/10 w-10 h-10 rounded-full flex items-center justify-center text-xl">✕</button>
+            </div>
+
+            <!-- Dias -->
+            <div class="days-wrapper" id="daysContainer"></div>
+            <div class="h-[1px] w-full bg-white/10 mb-6"></div>
+
+            <h3 class="text-xs font-black uppercase text-gray-400 mb-3 tracking-widest">Horários Livres (07h - 23h)</h3>
+            <div class="time-grid" id="timeContainer"></div>
+
+            <!-- Botão Chamada para Ação -->
+            <div id="actionArea" class="mt-8">
+                <button id="btnConfirmar" onclick="tentarAgendar()" class="w-full bg-[#333] hover:bg-[#FF4500] hover:text-black text-gray-400 font-black py-5 rounded-2xl uppercase text-xs tracking-[0.2em] transition-all">
+                    🔒 Faça Login para Agendar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AUTH MODAL -->
+    <div class="modal-overlay" id="authModal">
+        <div class="auth-card">
+            <button onclick="fecharModal('authModal')" class="absolute top-6 right-6 text-white/50 hover:text-white">✕</button>
+            <div id="authMsg" class="msg-box"></div>
+            
+            <div id="loginView">
+                <h2 class="font-impact text-3xl mb-2 text-center text-white">LOGIN</h2>
+                <input type="email" id="loginEmail" placeholder="Email" class="input-dark">
+                <input type="password" id="loginPassword" placeholder="Senha" class="input-dark">
+                <button onclick="fazerLogin()" class="w-full bg-[#FF4500] text-black font-black py-4 rounded-xl mt-4 uppercase text-xs tracking-widest">Entrar</button>
+                <p class="text-center mt-6 text-xs text-gray-500 cursor-pointer" onclick="toggleAuth('cadastro')">Criar conta</p>
+            </div>
+
+            <div id="cadastroView" class="hidden">
+                <h2 class="font-impact text-3xl mb-2 text-center text-[#39FF14]">CADASTRO</h2>
+                <input type="text" id="regNome" placeholder="Nome" class="input-dark">
+                <input type="tel" id="regWhats" placeholder="WhatsApp" class="input-dark">
+                <input type="email" id="regEmail" placeholder="Email" class="input-dark">
+                <input type="password" id="regPassword" placeholder="Senha" class="input-dark">
+                <button onclick="criarConta()" class="w-full border-2 border-[#39FF14] text-[#39FF14] font-black py-4 rounded-xl mt-4 uppercase text-xs tracking-widest">Criar</button>
+                <p class="text-center mt-6 text-xs text-gray-500 cursor-pointer" onclick="toggleAuth('login')">Voltar</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-section">
+                <div class="footer-logo"><span>TOP</span><span>SOCCER</span></div>
+                <p>A melhor plataforma de agendamento de quadras de futebol.</p>
+            </div>
+            <div class="footer-section">
+                <h3>Navegação</h3>
+                <div class="footer-links">
+                    <a href="#" onclick="abrirCalendario('Arena'); return false;">📌 Agendar Arena</a>
+                    <a href="#" onclick="abrirCalendario('Edícula VIP'); return false;">🏊 Edícula VIP</a>
+                </div>
+            </div>
+            <div class="footer-section">
+                <h3>Contato</h3>
+                <p>☎️ (17) 3334-XXXX<br>📱 (17) 99999-9999</p>
+            </div>
+        </div>
+        <div class="footer-divider"></div>
+        <div class="footer-bottom">
+            <p>© 2025 Top Soccer - Todos os direitos reservados.</p>
+        </div>
+    </footer>
+
+    <!-- Scripts no final -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="script.js?v=20260207001"></script>
+
+    <!-- Estilos Internos para Modais (Opcional se mover pro CSS) -->
+    <style>
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); backdrop-filter: blur(15px); z-index: 2000; display: none; align-items: flex-end; justify-content: center; }
+        .modal-overlay.active { display: flex; }
+        .auth-card { width: 90%; max-width: 400px; background: #111; border-radius: 30px; padding: 40px; border: 1px solid rgba(255,69,0,0.2); position: relative; }
+        .input-dark { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 12px; border-radius: 12px; margin: 10px 0; outline: none; font-size: 12px; }
+        .msg-box { display: none; padding: 12px; margin-bottom: 15px; border-radius: 8px; font-size: 12px; font-weight: bold; text-align: center; }
+        .msg-error { background: rgba(255,0,0,0.2); color: #ff5555; border: 1px solid #ff5555; }
+        .msg-success { background: rgba(0,255,0,0.2); color: #55ff55; border: 1px solid #55ff55; }
+        .hidden { display: none !important; }
+        .footer { background: var(--card-bg); border-top: 1px solid rgba(255,255,255,0.05); padding: 40px 20px 20px; margin-top: 60px; }
+        .footer-container { max-width: 500px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 30px; margin-bottom: 30px; }
+        .footer-section { text-align: center; }
+        .footer-logo { font-family: 'Archivo Black'; font-size: 18px; margin-bottom: 10px; }
+        .footer-logo span { margin: 0 5px; color: var(--arena-color); }
+        .footer-section h3 { font-size: 12px; font-weight: 900; text-transform: uppercase; margin-bottom: 15px; color: #888; }
+        .footer-section p { font-size: 11px; line-height: 1.8; color: #666; }
+        .footer-links { display: flex; flex-direction: column; gap: 10px; }
+        .footer-links a { font-size: 11px; color: var(--arena-color); text-decoration: none; transition: 0.3s; }
+        .footer-links a:hover { color: white; }
+        .footer-divider { height: 1px; background: rgba(255,255,255,0.05); margin: 30px 0; }
+        .footer-bottom { text-align: center; font-size: 10px; color: #444; }
+    </style>
+
+    <script>
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof inicializarSupabase === 'function') { inicializarSupabase(); }
+            if (typeof renderDias === 'function') { renderDias(); }
+        });
+    </script>
+</body>
+</html>

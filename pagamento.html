@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pagamento | Top Soccer</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://js.stripe.com/v3/"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        :root { --arena: #FF4500; --bg: #050505; --card: #111; --success: #39FF14; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: linear-gradient(135deg, #000 0%, #1a1a1a 100%); color: white; font-family: 'Inter', sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .font-impact { font-family: 'Archivo Black', sans-serif; text-transform: uppercase; font-style: italic; }
+        
+        .container { max-width: 500px; width: 100%; }
+        .card { background: var(--card); border-radius: 30px; padding: 40px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 60px rgba(0,0,0,0.5); margin-bottom: 20px; }
+        
+        .icon { width: 80px; height: 80px; margin: 0 auto 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 40px; }
+        .icon-payment { background: linear-gradient(135deg, rgba(255,69,0,0.3), rgba(255,69,0,0.1)); border: 2px solid var(--arena); }
+        .icon-success { background: linear-gradient(135deg, rgba(57,255,20,0.3), rgba(57,255,20,0.1)); border: 2px solid var(--success); animation: pulse 2s infinite; }
+        
+        @keyframes pulse { 0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(57,255,20,0.4); } 50% { transform: scale(1.05); box-shadow: 0 0 30px 10px rgba(57,255,20,0); } }
+        
+        h1 { font-size: 28px; font-weight: 900; margin-bottom: 10px; text-align: center; }
+        h2 { font-size: 20px; font-weight: 900; color: var(--arena); margin-bottom: 20px; }
+        p { color: #888; font-size: 14px; line-height: 1.6; text-align: center; margin-bottom: 15px; }
+        
+        .info-box { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 20px; margin: 25px 0; }
+        .info-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .info-row:last-child { border-bottom: none; }
+        .info-label { font-size: 12px; color: #666; text-transform: uppercase; font-weight: 700; }
+        .info-value { font-size: 14px; font-weight: 900; color: white; }
+        
+        .price-display { text-align: center; padding: 30px; background: rgba(255,69,0,0.1); border-radius: 20px; margin: 25px 0; border: 2px dashed var(--arena); }
+        .price-label { font-size: 12px; color: #888; text-transform: uppercase; font-weight: 700; margin-bottom: 10px; }
+        .price-value { font-size: 48px; font-weight: 900; color: var(--arena); line-height: 1; }
+        
+        /* Stripe Elements */
+        #card-element { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 15px; border-radius: 15px; margin: 20px 0; }
+        #card-errors { color: #ff5555; font-size: 13px; margin-top: 10px; text-align: center; }
+        
+        /* Método de Pagamento */
+        .payment-methods { display: flex; gap: 10px; margin: 25px 0; }
+        .payment-method { flex: 1; padding: 20px; border-radius: 15px; border: 2px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); cursor: pointer; transition: 0.3s; text-align: center; }
+        .payment-method:hover { border-color: var(--arena); }
+        .payment-method.active { border-color: var(--arena); background: rgba(255,69,0,0.1); }
+        .payment-method-icon { font-size: 32px; margin-bottom: 10px; }
+        .payment-method-name { font-size: 12px; font-weight: 900; text-transform: uppercase; color: white; }
+        
+        /* QR Code PIX */
+        .pix-area { text-align: center; padding: 30px; background: rgba(255,255,255,0.03); border-radius: 20px; margin: 20px 0; }
+        .qr-code { width: 250px; height: 250px; margin: 20px auto; background: white; padding: 15px; border-radius: 15px; display: flex; align-items: center; justify-content: center; }
+        .qr-code img { width: 100%; height: 100%; }
+        .pix-copy { background: rgba(255,255,255,0.05); border: 1px dashed rgba(255,255,255,0.3); border-radius: 10px; padding: 15px; margin: 20px 0; word-break: break-all; font-size: 11px; color: #888; font-family: monospace; }
+        .copy-pix-btn { background: var(--success); color: black; font-weight: 900; padding: 12px 30px; border-radius: 10px; border: none; font-size: 12px; cursor: pointer; margin-top: 15px; }
+        
+        .btn { width: 100%; background: var(--arena); color: black; font-weight: 900; text-transform: uppercase; padding: 18px; border-radius: 20px; border: none; font-size: 14px; letter-spacing: 2px; cursor: pointer; transition: 0.3s; box-shadow: 0 0 30px rgba(255,69,0,0.3); }
+        .btn:hover:not(:disabled) { transform: scale(1.02); box-shadow: 0 0 50px rgba(255,69,0,0.5); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .hidden { display: none !important; }
+        .loading { text-align: center; padding: 50px; }
+        .spinner { width: 50px; height: 50px; border: 4px solid rgba(255,255,255,0.1); border-top-color: var(--arena); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- LOADING -->
+        <div id="loadingArea" class="card">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p style="margin-top: 20px;">Carregando informações...</p>
+            </div>
+        </div>
+
+        <!-- PAGAMENTO -->
+        <div id="paymentArea" class="hidden">
+            <div class="card">
+                <div class="icon icon-payment">💳</div>
+                <h1 class="font-impact">FINALIZE SEU PAGAMENTO</h1>
+                <p>Confirme seus dados e efetue o pagamento para garantir sua vaga.</p>
+                
+                <div class="info-box">
+                    <div class="info-row">
+                        <span class="info-label">👤 Jogador</span>
+                        <span class="info-value" id="nomeJogador">--</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">📅 Data</span>
+                        <span class="info-value" id="dataJogo">--</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">⏰ Horário</span>
+                        <span class="info-value" id="horarioJogo">--</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">⚽ Quadra</span>
+                        <span class="info-value" id="quadraJogo">--</span>
+                    </div>
+                </div>
+
+                <div class="price-display">
+                    <div class="price-label">💰 Valor a Pagar</div>
+                    <div class="price-value" id="valorPagar">R$ 0,00</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Escolha o Método de Pagamento</h2>
+                
+                <div class="payment-methods">
+                    <div class="payment-method active" onclick="selectPaymentMethod('card')">
+                        <div class="payment-method-icon">💳</div>
+                        <div class="payment-method-name">Cartão</div>
+                    </div>
+                    <div class="payment-method" onclick="selectPaymentMethod('pix')">
+                        <div class="payment-method-icon">📱</div>
+                        <div class="payment-method-name">PIX</div>
+                    </div>
+                </div>
+
+                <!-- CARTÃO -->
+                <div id="cardArea">
+                    <h2 style="margin-top: 30px;">Dados do Cartão</h2>
+                    <form id="payment-form">
+                        <div id="card-element"></div>
+                        <div id="card-errors" role="alert"></div>
+                        <button type="submit" id="btnPagar" class="btn" style="margin-top: 30px;">
+                            🔒 PAGAR AGORA
+                        </button>
+                    </form>
+                </div>
+
+                <!-- PIX -->
+                <div id="pixArea" class="hidden">
+                    <div class="pix-area">
+                        <h2 style="margin-bottom: 20px;">Escaneie o QR Code</h2>
+                        <div class="qr-code" id="qrCodeContainer">
+                            <div class="spinner"></div>
+                        </div>
+                        <p style="font-size: 13px; color: #888; margin: 20px 0;">
+                            Ou copie o código PIX abaixo:
+                        </p>
+                        <div class="pix-copy" id="pixCode">Gerando código...</div>
+                        <button class="copy-pix-btn" onclick="copiarPixCode()">
+                            📋 COPIAR CÓDIGO PIX
+                        </button>
+                        <p style="font-size: 12px; color: #666; margin-top: 20px;">
+                            ⏱️ Aguardando pagamento...
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SUCESSO -->
+        <div id="successArea" class="hidden">
+            <div class="card">
+                <div class="icon icon-success">✓</div>
+                <h1 class="font-impact" style="color: var(--success);">PAGAMENTO CONFIRMADO!</h1>
+                <p>Sua vaga está garantida! Nos vemos em campo! 🎉</p>
+                
+                <div class="info-box">
+                    <div class="info-row">
+                        <span class="info-label">📋 Status</span>
+                        <span class="info-value" style="color: var(--success);">✅ PAGO</span>
+                    </div>
+                </div>
+                
+                <button onclick="window.location.href='index.html'" class="btn" style="margin-top: 30px;">
+                    🏠 VOLTAR PARA INÍCIO
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://ibchbcxtzngihxjschgl.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImliY2hiY3h0em5naWh4anNjaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk3MTYyNzYsImV4cCI6MjA4NTI5MjI3Nn0.ybBzyBWFQIvw6EV3F_xQwvXHJBX7wTsm05xEgRqsu34';
+        const STRIPE_KEY = 'pk_test_51SyPBMHG2b26DYmIcelPJ2Qm2D7TgIeyrKrWW8J8c8WVlcx6BQCFkIgXMqCEi8K1L42GRaP38Cs6edteLMVFaPkV00HdMzx5ru';
+
+        let supabaseClient = null;
+        let stripe = null;
+        let cardElement = null;
+        let inscricaoId = null;
+        let inscricaoData = null;
+        let valorCentavos = 0;
+        let paymentMethod = 'card'; // 'card' ou 'pix'
+        let pixCheckInterval = null;
+
+        window.onload = async function() {
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            stripe = Stripe(STRIPE_KEY);
+
+            // Pegar ID da inscrição
+            const urlParams = new URLSearchParams(window.location.search);
+            inscricaoId = urlParams.get('inscricao');
+
+            if (!inscricaoId) {
+                alert('❌ ID de inscrição inválido!');
+                window.location.href = 'index.html';
+                return;
+            }
+
+            await carregarDados();
+        };
+
+        async function carregarDados() {
+            try {
+                // Buscar dados da inscrição
+                const { data: inscricao, error: errInscricao } = await supabaseClient
+                    .from('participantes_jogo')
+                    .select('*, agendamento:agendamentos(*)')
+                    .eq('id', inscricaoId)
+                    .single();
+
+                if (errInscricao || !inscricao) throw new Error('Inscrição não encontrada');
+
+                inscricaoData = inscricao;
+                const jogo = inscricao.agendamento;
+
+                // Verificar se já pagou
+                if (inscricao.status_pagamento === 'pago') {
+                    mostrarSucesso();
+                    return;
+                }
+
+                // Preencher dados na tela
+                $('#nomeJogador').text(inscricao.nome_jogador);
+                $('#dataJogo').text(formatarData(jogo.data_jogo));
+                $('#horarioJogo').text(jogo.hora_inicio);
+                $('#quadraJogo').text(jogo.sub_recurso);
+                
+                const valor = parseFloat(jogo.valor_por_pessoa);
+                valorCentavos = Math.round(valor * 100);
+                $('#valorPagar').text('R$ ' + valor.toFixed(2));
+
+                // Configurar Stripe Elements
+                const elements = stripe.elements();
+                cardElement = elements.create('card', {
+                    style: {
+                        base: {
+                            color: '#ffffff',
+                            fontFamily: 'Inter, sans-serif',
+                            fontSize: '16px',
+                            '::placeholder': { color: '#888' }
+                        },
+                        invalid: { color: '#ff5555' }
+                    }
+                });
+                cardElement.mount('#card-element');
+
+                cardElement.on('change', function(event) {
+                    const displayError = document.getElementById('card-errors');
+                    if (event.error) {
+                        displayError.textContent = event.error.message;
+                    } else {
+                        displayError.textContent = '';
+                    }
+                });
+
+                // Mostrar área de pagamento
+                $('#loadingArea').addClass('hidden');
+                $('#paymentArea').removeClass('hidden');
+
+            } catch(e) {
+                alert('❌ Erro: ' + e.message);
+                window.location.href = 'index.html';
+            }
+        }
+
+        // Processar pagamento
+        $('#payment-form').on('submit', async function(e) {
+            e.preventDefault();
+
+            const btn = $('#btnPagar');
+            btn.prop('disabled', true).text('PROCESSANDO...');
+
+            try {
+                // Criar Payment Intent (em produção, isso deve ser feito no backend)
+                const { paymentMethod, error } = await stripe.createPaymentMethod({
+                    type: 'card',
+                    card: cardElement,
+                    billing_details: {
+                        name: inscricaoData.nome_jogador,
+                        phone: inscricaoData.telefone
+                    }
+                });
+
+                if (error) {
+                    throw new Error(error.message);
+                }
+
+                // IMPORTANTE: Em produção, você deve criar um endpoint no backend
+                // para criar o Payment Intent e confirmar o pagamento
+                // Por enquanto, vou simular sucesso para teste
+                
+                // Atualizar status no Supabase
+                const { error: updateError } = await supabaseClient
+                    .from('participantes_jogo')
+                    .update({
+                        status_pagamento: 'pago',
+                        data_pagamento: new Date().toISOString()
+                    })
+                    .eq('id', inscricaoId);
+
+                if (updateError) throw updateError;
+
+                mostrarSucesso();
+
+            } catch(e) {
+                alert('❌ Erro no pagamento: ' + e.message);
+                btn.prop('disabled', false).text('🔒 PAGAR AGORA');
+            }
+        });
+
+        function mostrarSucesso() {
+            $('#loadingArea, #paymentArea').addClass('hidden');
+            $('#successArea').removeClass('hidden');
+        }
+
+        function formatarData(dataISO) {
+            const [ano, mes, dia] = dataISO.split('-');
+            return `${dia}/${mes}/${ano}`;
+        }
+
+        // Selecionar método de pagamento
+        function selectPaymentMethod(method) {
+            paymentMethod = method;
+            
+            // Atualizar visual dos botões
+            $('.payment-method').removeClass('active');
+            if (method === 'card') {
+                $('.payment-method').eq(0).addClass('active');
+                $('#cardArea').removeClass('hidden');
+                $('#pixArea').addClass('hidden');
+            } else {
+                $('.payment-method').eq(1).addClass('active');
+                $('#cardArea').addClass('hidden');
+                $('#pixArea').removeClass('hidden');
+                gerarPix();
+            }
+        }
+
+        // Gerar PIX
+        async function gerarPix() {
+            try {
+                // IMPORTANTE: Em produção, isso deve vir do backend
+                // Por enquanto, vou simular um código PIX
+                
+                // Simulação de código PIX
+                const pixCode = `00020126580014br.gov.bcb.pix0136${generateRandomUUID()}52040000530398654${(valorCentavos/100).toFixed(2)}5802BR5925Top Soccer Excellence6009SAO PAULO62070503***6304`;
+                
+                // Gerar QR Code (usando API gratuita)
+                const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(pixCode)}`;
+                
+                $('#qrCodeContainer').html(`<img src="${qrCodeUrl}" alt="QR Code PIX">`);
+                $('#pixCode').text(pixCode);
+                
+                // Iniciar verificação de pagamento (simulado)
+                iniciarVerificacaoPix();
+                
+            } catch(e) {
+                alert('❌ Erro ao gerar PIX: ' + e.message);
+            }
+        }
+
+        function generateRandomUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        function copiarPixCode() {
+            const code = $('#pixCode').text();
+            navigator.clipboard.writeText(code).then(() => {
+                const btn = event.target;
+                const textoOriginal = btn.textContent;
+                btn.textContent = "✓ CÓDIGO COPIADO!";
+                btn.style.background = "#39FF14";
+                setTimeout(() => {
+                    btn.textContent = textoOriginal;
+                    btn.style.background = "";
+                }, 2000);
+            }).catch(() => {
+                prompt("Copie o código PIX:", code);
+            });
+        }
+
+        // Verificar pagamento PIX (simulado - em produção usa webhook)
+        function iniciarVerificacaoPix() {
+            // Em produção, você deve usar webhooks do Stripe
+            // Por enquanto, vou simular aprovação após 10 segundos para teste
+            
+            let segundos = 0;
+            pixCheckInterval = setInterval(async () => {
+                segundos++;
+                
+                // Simular pagamento após 15 segundos (só para teste!)
+                if (segundos >= 15) {
+                    clearInterval(pixCheckInterval);
+                    
+                    // Atualizar status no Supabase
+                    const { error } = await supabaseClient
+                        .from('participantes_jogo')
+                        .update({
+                            status_pagamento: 'pago',
+                            data_pagamento: new Date().toISOString()
+                        })
+                        .eq('id', inscricaoId);
+                    
+                    if (!error) {
+                        mostrarSucesso();
+                    }
+                }
+            }, 1000);
+        }
+    </script>
+</body>
+</html>

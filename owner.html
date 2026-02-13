@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel do Proprietário | Top Soccer</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        :root { --arena: #FF4500; --bg: #050505; --card: #111; --success: #39FF14; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: linear-gradient(135deg, #000 0%, #1a1a1a 100%); color: white; font-family: 'Inter', sans-serif; padding-bottom: 50px; }
+        .font-impact { font-family: 'Archivo Black', sans-serif; text-transform: uppercase; font-style: italic; }
+        
+        /* HEADER */
+        .header { position: fixed; top: 0; width: 100%; height: 70px; z-index: 50; background: rgba(10,10,10,0.95); border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; }
+        
+        /* CARDS DE RESUMO */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin: 90px 20px 20px; }
+        .stat-card { background: var(--card); border-radius: 20px; padding: 25px; border: 1px solid rgba(255,255,255,0.05); position: relative; overflow: hidden; }
+        .stat-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; }
+        .stat-card.orange::before { background: var(--arena); }
+        .stat-card.green::before { background: var(--success); }
+        .stat-card.yellow::before { background: #FFD700; }
+        .stat-card.blue::before { background: #00BFFF; }
+        .stat-label { font-size: 11px; text-transform: uppercase; color: #666; font-weight: 900; letter-spacing: 1px; }
+        .stat-value { font-size: 36px; font-weight: 900; margin-top: 10px; }
+        .stat-value.orange { color: var(--arena); }
+        .stat-value.green { color: var(--success); }
+        .stat-value.yellow { color: #FFD700; }
+        .stat-value.blue { color: #00BFFF; }
+        
+        /* FILTROS */
+        .filters { background: var(--card); border-radius: 20px; padding: 20px; margin: 20px; border: 1px solid rgba(255,255,255,0.05); }
+        .filter-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        .filter-label { font-size: 12px; color: #666; text-transform: uppercase; font-weight: 900; }
+        select, input[type="date"] { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 10px 15px; border-radius: 10px; font-size: 13px; font-weight: 700; }
+        select:focus, input:focus { outline: none; border-color: var(--arena); }
+        
+        /* CARDS DE JOGO */
+        .game-card { background: var(--card); border-radius: 20px; padding: 25px; margin: 20px; border: 1px solid rgba(255,255,255,0.05); position: relative; }
+        .game-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; border-radius: 20px 0 0 20px; }
+        .game-card.confirmado::before { background: var(--success); }
+        .game-card.cancelado::before { background: #ff5555; }
+        
+        .game-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; cursor: pointer; }
+        .game-header:hover { opacity: 0.8; }
+        .game-title { flex: 1; }
+        .game-quadra { font-size: 16px; font-weight: 900; color: var(--arena); text-transform: uppercase; }
+        .game-info { font-size: 13px; color: #888; margin-top: 5px; }
+        .game-stats { display: flex; gap: 15px; margin: 15px 0; flex-wrap: wrap; }
+        .game-stat { background: rgba(255,255,255,0.03); padding: 10px 15px; border-radius: 10px; font-size: 12px; }
+        .game-stat-label { color: #666; font-size: 10px; text-transform: uppercase; font-weight: 900; }
+        .game-stat-value { color: white; font-weight: 900; font-size: 16px; margin-top: 3px; }
+        
+        .participants-list { margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 20px; display: none; }
+        .participants-list.open { display: block; animation: slideDown 0.3s; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .participant-row { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(255,255,255,0.02); border-radius: 10px; margin-bottom: 8px; border-left: 3px solid; }
+        .participant-row.pago { border-left-color: var(--success); }
+        .participant-row.pendente { border-left-color: orange; }
+        .participant-name { font-weight: 900; color: white; font-size: 14px; }
+        .participant-contact { font-size: 11px; color: #666; margin-top: 3px; }
+        .participant-value { font-weight: 900; font-size: 14px; }
+        .participant-value.pago { color: var(--success); }
+        .participant-value.pendente { color: orange; }
+        
+        .toggle-icon { font-size: 24px; transition: transform 0.3s; }
+        .toggle-icon.open { transform: rotate(180deg); }
+        
+        .empty-state { text-align: center; padding: 60px 20px; color: #666; }
+        .empty-state-icon { font-size: 48px; margin-bottom: 20px; opacity: 0.3; }
+        
+        /* BADGES */
+        .badge { display: inline-block; padding: 5px 10px; border-radius: 8px; font-size: 10px; font-weight: 900; text-transform: uppercase; }
+        .badge.confirmado { background: rgba(57,255,20,0.2); color: var(--success); border: 1px solid var(--success); }
+        .badge.pendente { background: rgba(255,165,0,0.2); color: orange; border: 1px solid orange; }
+        .badge.cancelado { background: rgba(255,0,0,0.2); color: #ff5555; border: 1px solid #ff5555; }
+        .badge.pago { background: rgba(57,255,20,0.2); color: var(--success); border: 1px solid var(--success); }
+        
+        /* BOTÕES */
+        .btn-action { background: rgba(255,69,0,0.1); color: var(--arena); border: 1px solid var(--arena); padding: 6px 12px; border-radius: 8px; font-size: 10px; font-weight: 900; cursor: pointer; transition: 0.2s; }
+        .btn-action:hover { background: var(--arena); color: black; }
+        
+        /* LOADING */
+        .loading { text-align: center; padding: 50px; }
+        .spinner { width: 50px; height: 50px; border: 4px solid rgba(255,255,255,0.1); border-top-color: var(--arena); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <!-- HEADER -->
+    <header class="header">
+        <div class="font-impact text-xl italic tracking-tighter">
+            TOP <span style="color: var(--arena);">OWNER</span> PANEL
+        </div>
+        <div class="flex items-center gap-3">
+            <a href="admin.html" class="text-xs font-bold text-white bg-gray-700 px-3 py-1 rounded-full hover:bg-gray-600 transition flex items-center gap-1">
+                ⬅️ ADMIN
+            </a>
+            <span class="text-xs font-bold text-gray-400" id="ownerName">Proprietário</span>
+            <button onclick="logout()" class="text-xs font-bold text-[#FF4500] border border-[#FF4500] px-3 py-1 rounded-full hover:bg-[#FF4500] hover:text-black transition">SAIR</button>
+        </div>
+    </header>
+
+    <!-- ESTATÍSTICAS HOJE -->
+    <div style="margin: 90px 20px 10px; text-align: center;">
+        <h3 class="font-impact" style="font-size: 14px; color: var(--arena); letter-spacing: 2px;">📅 HOJE - <span id="dataHoje"></span></h3>
+    </div>
+    <div class="stats-grid">
+        <div class="stat-card orange">
+            <div class="stat-label">Jogos Hoje</div>
+            <div class="stat-value orange" id="jogosHoje">0</div>
+        </div>
+        <div class="stat-card green">
+            <div class="stat-label">Receita Hoje</div>
+            <div class="stat-value green" id="receitaHoje">R$ 0,00</div>
+        </div>
+        <div class="stat-card yellow">
+            <div class="stat-label">Pendente Hoje</div>
+            <div class="stat-value yellow" id="pendenteHoje">R$ 0,00</div>
+        </div>
+        <div class="stat-card blue">
+            <div class="stat-label">Participantes Hoje</div>
+            <div class="stat-value blue" id="participantesHoje">0</div>
+        </div>
+    </div>
+
+    <!-- ESTATÍSTICAS TOTAL -->
+    <div style="margin: 20px 20px 10px; text-align: center;">
+        <h3 class="font-impact" style="font-size: 12px; color: #666; letter-spacing: 2px;">📊 TOTAL GERAL</h3>
+    </div>
+    <div class="stats-grid">
+        <div class="stat-card orange">
+            <div class="stat-label">Total de Jogos</div>
+            <div class="stat-value orange" id="totalJogos">0</div>
+        </div>
+        <div class="stat-card green">
+            <div class="stat-label">Receita Total</div>
+            <div class="stat-value green" id="receitaTotal">R$ 0,00</div>
+        </div>
+        <div class="stat-card yellow">
+            <div class="stat-label">A Receber Total</div>
+            <div class="stat-value yellow" id="aReceber">R$ 0,00</div>
+        </div>
+        <div class="stat-card blue">
+            <div class="stat-label">Total Participantes</div>
+            <div class="stat-value blue" id="totalParticipantes">0</div>
+        </div>
+    </div>
+
+    <!-- PENDÊNCIAS DETALHADAS -->
+    <div style="margin: 30px 20px 20px;">
+        <h2 class="font-impact" style="font-size: 20px; color: #ff5555; margin-bottom: 15px;">⚠️ PAGAMENTOS PENDENTES</h2>
+        <div id="pendenciasDetalhadas"></div>
+    </div>
+
+    <!-- FILTROS -->
+    <div class="filters">
+        <div class="filter-row">
+            <span class="filter-label">🔍 Filtros:</span>
+            <input type="date" id="filtroDataInicio" placeholder="Data Início">
+            <input type="date" id="filtroDataFim" placeholder="Data Fim">
+            <select id="filtroQuadra">
+                <option value="">Todas as Quadras</option>
+                <option value="Quadra 1">Quadra 1</option>
+                <option value="Quadra 2">Quadra 2</option>
+                <option value="Quadra 3">Quadra 3</option>
+                <option value="Campo Oficial">Campo Oficial</option>
+                <option value="Mini Campo">Mini Campo</option>
+            </select>
+            <select id="filtroStatus">
+                <option value="">Todos Status</option>
+                <option value="confirmado">Confirmado</option>
+                <option value="cancelado">Cancelado</option>
+            </select>
+            <button class="btn-action" onclick="aplicarFiltros()">APLICAR</button>
+            <button class="btn-action" onclick="limparFiltros()">LIMPAR</button>
+        </div>
+    </div>
+
+    <!-- LISTA DE JOGOS -->
+    <div id="loadingGames" class="loading" style="margin: 50px;">
+        <div class="spinner"></div>
+        <p style="margin-top: 20px; color: #666;">Carregando jogos...</p>
+    </div>
+    
+    <div id="gamesContainer" class="hidden"></div>
+    
+    <div id="emptyState" class="hidden">
+        <div class="empty-state">
+            <div class="empty-state-icon">📭</div>
+            <h3 style="color: #888; font-size: 18px; font-weight: 900;">Nenhum jogo encontrado</h3>
+            <p style="color: #666; font-size: 13px; margin-top: 10px;">Ajuste os filtros ou crie um novo agendamento</p>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://ibchbcxtzngihxjschgl.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImliY2hiY3h0em5naWh4anNjaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk3MTYyNzYsImV4cCI6MjA4NTI5MjI3Nn0.ybBzyBWFQIvw6EV3F_xQwvXHJBX7wTsm05xEgRqsu34';
+
+        let supabaseClient = null;
+        let todosJogos = [];
+        let todosParticipantes = [];
+
+        window.onload = async function() {
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            
+            // Atualizar data de hoje
+            const hoje = new Date();
+            const dataFormatada = hoje.toLocaleDateString('pt-BR');
+            $('#dataHoje').text(dataFormatada);
+            
+            await verificarLogin();
+            await carregarDados();
+        };
+
+        async function verificarLogin() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) {
+                alert("🔒 Acesso restrito. Faça login.");
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            // 🔐 VERIFICAR SE É DONO
+            const { data: profile, error } = await supabaseClient
+                .from('profiles')
+                .select('is_owner, full_name')
+                .eq('id', session.user.id)
+                .single();
+            
+            if (!profile || profile.is_owner !== true) {
+                alert("⛔ Acesso negado. Esta área é exclusiva para proprietários.");
+                window.location.href = 'admin.html';
+                return;
+            }
+            
+            const nome = profile.full_name || session.user.email.split('@')[0];
+            $('#ownerName').text(nome.toUpperCase());
+        }
+
+        async function carregarDados() {
+            try {
+                // Carregar agendamentos (sem buscar profiles por enquanto)
+                const { data: jogos, error: erroJogos } = await supabaseClient
+                    .from('agendamentos')
+                    .select('*')
+                    .order('data_jogo', { ascending: false });
+
+                if (erroJogos) throw erroJogos;
+                todosJogos = jogos || [];
+
+                // Para cada jogo, buscar quantos participantes tem
+                for (let jogo of todosJogos) {
+                    const { data: participantes } = await supabaseClient
+                        .from('participantes_jogo')
+                        .select('id, status_pagamento')
+                        .eq('agendamento_id', jogo.id);
+                    
+                    jogo.participantes_count = participantes ? participantes.length : 0;
+                    jogo.pagos_count = participantes ? participantes.filter(p => p.status_pagamento === 'pago').length : 0;
+                }
+
+                // Carregar participantes
+                const { data: participantes, error: erroParticipantes } = await supabaseClient
+                    .from('participantes_jogo')
+                    .select('*, agendamento:agendamentos(data_jogo, hora_inicio, sub_recurso, valor_por_pessoa)');
+
+                if (erroParticipantes) throw erroParticipantes;
+                todosParticipantes = participantes || [];
+
+                calcularEstatisticas();
+                renderizarJogos(todosJogos);
+
+            } catch(e) {
+                alert('❌ Erro ao carregar dados: ' + e.message);
+                console.error(e);
+            }
+        }
+
+        function renderizarJogos(jogos) {
+            const container = $('#gamesContainer');
+            container.empty();
+
+            if (jogos.length === 0) {
+                $('#loadingGames').addClass('hidden');
+                $('#emptyState').removeClass('hidden');
+                $('#gamesContainer').addClass('hidden');
+                return;
+            }
+
+            $('#loadingGames').addClass('hidden');
+            $('#emptyState').addClass('hidden');
+            $('#gamesContainer').removeClass('hidden');
+
+            jogos.forEach(jogo => {
+                const statusClass = jogo.status === 'confirmado' ? 'confirmado' : 'cancelado';
+                // Simplificado - mostra apenas "Admin" por enquanto
+                const criador = 'Admin';
+                
+                const inscritos = jogo.participantes_count || 0;
+                const pagos = jogo.pagos_count || 0;
+                const maxJogadores = jogo.racha_ativo ? jogo.num_jogadores : 1;
+                
+                // Pegar participantes deste jogo
+                const participantesJogo = todosParticipantes.filter(p => p.agendamento_id === jogo.id);
+                
+                let card = `
+                    <div class="game-card ${statusClass}">
+                        <div class="game-header" onclick="toggleParticipants('${jogo.id}')">
+                            <div class="game-title">
+                                <div class="game-quadra">⚽ ${jogo.sub_recurso}</div>
+                                <div class="game-info">
+                                    📅 ${formatarData(jogo.data_jogo)} às ${jogo.hora_inicio} • 
+                                    ⏱️ ${jogo.duracao}h • 
+                                    👤 ${criador}
+                                </div>
+                            </div>
+                            <div class="toggle-icon" id="icon-${jogo.id}">▼</div>
+                        </div>
+                        
+                        <div class="game-stats">
+                            <div class="game-stat">
+                                <div class="game-stat-label">Tipo</div>
+                                <div class="game-stat-value">${jogo.racha_ativo ? '🎮 Racha' : '👤 Individual'}</div>
+                            </div>
+                            ${jogo.racha_ativo ? `
+                                <div class="game-stat">
+                                    <div class="game-stat-label">Inscritos</div>
+                                    <div class="game-stat-value" style="color: ${inscritos === maxJogadores ? 'var(--success)' : 'orange'};">
+                                        ${inscritos}/${maxJogadores}
+                                    </div>
+                                </div>
+                                <div class="game-stat">
+                                    <div class="game-stat-label">Pagos</div>
+                                    <div class="game-stat-value" style="color: var(--success);">✅ ${pagos}</div>
+                                </div>
+                            ` : ''}
+                            <div class="game-stat">
+                                <div class="game-stat-label">Valor Total</div>
+                                <div class="game-stat-value" style="color: var(--success);">R$ ${parseFloat(jogo.valor_total).toFixed(2)}</div>
+                            </div>
+                            <div class="game-stat">
+                                <div class="game-stat-label">Status</div>
+                                <div class="game-stat-value">
+                                    <span class="badge ${statusClass}">${jogo.status}</span>
+                                </div>
+                            </div>
+                        </div>
+                `;
+
+                // Adicionar lista de participantes
+                if (participantesJogo.length > 0) {
+                    card += `
+                        <div class="participants-list" id="participants-${jogo.id}">
+                            <h4 style="font-size: 12px; text-transform: uppercase; color: #666; font-weight: 900; margin-bottom: 15px;">
+                                👥 PARTICIPANTES (${participantesJogo.length})
+                            </h4>
+                    `;
+
+                    participantesJogo.forEach(p => {
+                        const statusClass = p.status_pagamento === 'pago' ? 'pago' : 'pendente';
+                        const statusIcon = p.status_pagamento === 'pago' ? '✅' : '⏳';
+                        const valor = parseFloat(jogo.valor_por_pessoa || jogo.valor_total);
+
+                        card += `
+                            <div class="participant-row ${statusClass}">
+                                <div>
+                                    <div class="participant-name">${p.nome_jogador}</div>
+                                    <div class="participant-contact">
+                                        📱 ${p.telefone}${p.email ? ` • ✉️ ${p.email}` : ''}
+                                    </div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div class="participant-value ${statusClass}">R$ ${valor.toFixed(2)}</div>
+                                    <div style="font-size: 11px; color: #666; margin-top: 3px;">
+                                        ${statusIcon} ${p.status_pagamento}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    card += `</div>`;
+                } else if (jogo.racha_ativo) {
+                    card += `
+                        <div class="participants-list" id="participants-${jogo.id}">
+                            <p style="text-align: center; color: #666; padding: 20px; font-size: 13px;">
+                                ℹ️ Nenhum participante inscrito ainda
+                            </p>
+                        </div>
+                    `;
+                }
+
+                card += `</div>`;
+                container.append(card);
+            });
+        }
+
+        function toggleParticipants(jogoId) {
+            const list = $(`#participants-${jogoId}`);
+            const icon = $(`#icon-${jogoId}`);
+            
+            list.toggleClass('open');
+            icon.toggleClass('open');
+        }
+
+        function calcularEstatisticas() {
+            // Data de hoje em formato ISO (YYYY-MM-DD)
+            const hoje = new Date();
+            const hojeISO = hoje.toISOString().split('T')[0];
+            
+            // ========== ESTATÍSTICAS DE HOJE ==========
+            const jogosHoje = todosJogos.filter(j => 
+                j.status === 'confirmado' && j.data_jogo === hojeISO
+            );
+            
+            let receitaHoje = 0;
+            let pendenteHoje = 0;
+            let participantesHoje = 0;
+            
+            jogosHoje.forEach(jogo => {
+                const participantesDoJogo = todosParticipantes.filter(p => p.agendamento_id === jogo.id);
+                
+                participantesDoJogo.forEach(p => {
+                    participantesHoje++;
+                    const valor = parseFloat(jogo.valor_por_pessoa || 0);
+                    
+                    if (p.status_pagamento === 'pago') {
+                        receitaHoje += valor;
+                    } else if (p.status_pagamento === 'pendente') {
+                        pendenteHoje += valor;
+                    }
+                });
+            });
+            
+            // ========== ESTATÍSTICAS TOTAIS ==========
+            const totalJogos = todosJogos.filter(j => j.status === 'confirmado').length;
+            
+            let receitaTotal = 0;
+            let aReceber = 0;
+            let totalParticipantes = 0;
+            
+            todosParticipantes.forEach(p => {
+                totalParticipantes++;
+                const jogo = todosJogos.find(j => j.id === p.agendamento_id);
+                if (!jogo) return;
+                
+                const valor = parseFloat(jogo.valor_por_pessoa || 0);
+                
+                if (p.status_pagamento === 'pago') {
+                    receitaTotal += valor;
+                } else if (p.status_pagamento === 'pendente') {
+                    aReceber += valor;
+                }
+            });
+            
+            // ========== ATUALIZAR UI - HOJE ==========
+            $('#jogosHoje').text(jogosHoje.length);
+            $('#receitaHoje').text(formatarMoeda(receitaHoje));
+            $('#pendenteHoje').text(formatarMoeda(pendenteHoje));
+            $('#participantesHoje').text(participantesHoje);
+            
+            // ========== ATUALIZAR UI - TOTAL ==========
+            $('#totalJogos').text(totalJogos);
+            $('#receitaTotal').text(formatarMoeda(receitaTotal));
+            $('#aReceber').text(formatarMoeda(aReceber));
+            $('#totalParticipantes').text(totalParticipantes);
+            
+            // ========== PENDÊNCIAS DETALHADAS ==========
+            mostrarPendenciasDetalhadas();
+        }
+
+        function mostrarPendenciasDetalhadas() {
+            const container = $('#pendenciasDetalhadas');
+            container.empty();
+            
+            // Buscar todos os participantes pendentes
+            const pendentes = todosParticipantes.filter(p => p.status_pagamento === 'pendente');
+            
+            if (pendentes.length === 0) {
+                container.html(`
+                    <div style="text-align: center; padding: 30px; background: rgba(57, 255, 20, 0.1); border: 1px solid var(--success); border-radius: 8px;">
+                        <div style="font-size: 40px; margin-bottom: 10px;">✅</div>
+                        <div style="color: var(--success); font-weight: bold; font-size: 16px;">TODOS OS PAGAMENTOS EM DIA!</div>
+                    </div>
+                `);
+                return;
+            }
+            
+            let html = `
+                <div style="background: rgba(255, 85, 85, 0.1); border: 1px solid #ff5555; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+                    <div style="font-size: 18px; font-weight: bold; color: #ff5555; margin-bottom: 5px;">
+                        ⚠️ ${pendentes.length} ${pendentes.length === 1 ? 'PESSOA NÃO PAGOU' : 'PESSOAS NÃO PAGARAM'}
+                    </div>
+                    <div style="font-size: 12px; color: #aaa;">Detalhes completos abaixo:</div>
+                </div>
+            `;
+            
+            pendentes.forEach((participante, index) => {
+                const jogo = todosJogos.find(j => j.id === participante.agendamento_id);
+                if (!jogo) return;
+                
+                const valor = parseFloat(jogo.valor_por_pessoa || 0);
+                const dataFormatada = formatarData(jogo.data_jogo);
+                
+                html += `
+                    <div style="background: #111; border: 2px solid #ff5555; border-radius: 8px; padding: 15px; margin-bottom: 12px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                            <!-- Coluna 1: Dados do Participante -->
+                            <div>
+                                <div style="color: var(--arena); font-weight: bold; font-size: 16px; margin-bottom: 8px;">
+                                    👤 ${participante.nome_jogador}
+                                </div>
+                                <div style="font-size: 13px; color: #ccc; margin-bottom: 4px;">
+                                    📱 WhatsApp: <a href="https://wa.me/55${participante.telefone.replace(/\D/g, '')}" target="_blank" style="color: var(--success); text-decoration: none;">${participante.telefone}</a>
+                                </div>
+                                ${participante.email ? `
+                                    <div style="font-size: 13px; color: #ccc; margin-bottom: 4px;">
+                                        ✉️ Email: <span style="color: #aaa;">${participante.email}</span>
+                                    </div>
+                                ` : ''}
+                                <div style="font-size: 14px; color: #ff5555; font-weight: bold; margin-top: 8px;">
+                                    💰 Deve: R$ ${valor.toFixed(2)}
+                                </div>
+                            </div>
+                            
+                            <!-- Coluna 2: Dados do Jogo -->
+                            <div>
+                                <div style="color: #aaa; font-size: 12px; font-weight: bold; margin-bottom: 8px;">DETALHES DO JOGO:</div>
+                                <div style="font-size: 13px; color: #ccc; margin-bottom: 4px;">
+                                    📅 Data: <span style="color: white;">${dataFormatada}</span>
+                                </div>
+                                <div style="font-size: 13px; color: #ccc; margin-bottom: 4px;">
+                                    ⏰ Horário: <span style="color: white;">${jogo.hora_inicio}</span>
+                                </div>
+                                <div style="font-size: 13px; color: #ccc; margin-bottom: 4px;">
+                                    🏟️ Quadra: <span style="color: white;">${jogo.sub_recurso}</span>
+                                </div>
+                                <div style="font-size: 13px; color: #ccc; margin-bottom: 4px;">
+                                    👤 Marcado por: <span style="color: var(--arena);">Admin</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.html(html);
+        }
+
+        function renderizarJogos(jogos) {
+            const tbody = $('#tabelaBody');
+            tbody.empty();
+
+            if (jogos.length === 0) {
+                tbody.html('<tr><td colspan="9" style="text-align:center; color:#666;">Nenhum jogo encontrado</td></tr>');
+            } else {
+                jogos.forEach(jogo => {
+                    const statusClass = jogo.status === 'confirmado' ? 'confirmado' : 'cancelado';
+                    const tipoJogo = jogo.racha_ativo ? `🎮 Racha (${jogo.num_jogadores}p)` : '👤 Individual';
+                    
+                    // Nome de quem marcou
+                    const criador = jogo.criador ? (jogo.criador.name || jogo.criador.email) : 'Admin';
+                    
+                    // Contadores de inscritos/pagos
+                    const inscritos = jogo.participantes_count || 0;
+                    const pagos = jogo.pagos_count || 0;
+                    const inscritosInfo = jogo.racha_ativo ? 
+                        `<span style="color: ${inscritos === jogo.num_jogadores ? 'var(--success)' : 'orange'};">${inscritos}/${jogo.num_jogadores}</span> | ✅ ${pagos}` : 
+                        '-';
+                    
+                    tbody.append(`
+                        <tr>
+                            <td><strong style="color: var(--arena);">${criador}</strong></td>
+                            <td><strong>${formatarData(jogo.data_jogo)}</strong></td>
+                            <td>${jogo.hora_inicio} <span style="color:#666;">(${jogo.duracao}h)</span></td>
+                            <td>${jogo.sub_recurso}</td>
+                            <td>${tipoJogo}</td>
+                            <td>${inscritosInfo}</td>
+                            <td><strong style="color: var(--success);">R$ ${parseFloat(jogo.valor_total).toFixed(2)}</strong></td>
+                            <td><span class="badge ${statusClass}">${jogo.status}</span></td>
+                            <td>
+                                ${jogo.racha_ativo ? `<button class="btn-action" onclick="verDetalhesJogo('${jogo.id}')">VER DETALHES</button>` : '-'}
+                            </td>
+                        </tr>
+                    `);
+                });
+            }
+
+            $('#loadingTable').addClass('hidden');
+            $('#tabelaJogos').removeClass('hidden');
+        }
+
+        function aplicarFiltros() {
+            const dataInicio = $('#filtroDataInicio').val();
+            const dataFim = $('#filtroDataFim').val();
+            const quadra = $('#filtroQuadra').val();
+            const status = $('#filtroStatus').val();
+
+            let jogosFiltrados = todosJogos.filter(jogo => {
+                let passa = true;
+                
+                if (dataInicio && jogo.data_jogo < dataInicio) passa = false;
+                if (dataFim && jogo.data_jogo > dataFim) passa = false;
+                if (quadra && jogo.sub_recurso !== quadra) passa = false;
+                if (status && jogo.status !== status) passa = false;
+                
+                return passa;
+            });
+
+            renderizarJogos(jogosFiltrados);
+        }
+
+        function limparFiltros() {
+            $('#filtroDataInicio').val('');
+            $('#filtroDataFim').val('');
+            $('#filtroQuadra').val('');
+            $('#filtroStatus').val('');
+            renderizarJogos(todosJogos);
+        }
+
+        function formatarData(dataISO) {
+            if (!dataISO) return '-';
+            const [ano, mes, dia] = dataISO.split('-');
+            return `${dia}/${mes}/${ano}`;
+        }
+
+        function formatarMoeda(valor) {
+            return 'R$ ' + parseFloat(valor).toFixed(2).replace('.', ',');
+        }
+
+        async function logout() {
+            await supabaseClient.auth.signOut();
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>

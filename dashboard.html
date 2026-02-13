@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Painel Agendador | Top Soccer v2.0</title>
+    <!-- BUILD: 20260207-2310 -->
+    
+    <!-- Bibliotecas -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        /* DESIGN SYSTEM DARK/NEON */
+        :root { --arena: #FF4500; --bg: #050505; --card: #111; --success: #39FF14; --danger: #FF0040; }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg); color: white; font-family: 'Inter', sans-serif; padding-bottom: 100px; }
+        .font-impact { font-family: 'Archivo Black', sans-serif; text-transform: uppercase; font-style: italic; }
+
+        .dash-header { position: fixed; top: 0; width: 100%; height: 70px; z-index: 50; background: rgba(10,10,10,0.95); border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; }
+        .panel-card { background: var(--card); border-radius: 24px; padding: 20px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; }
+        
+        /* SELETOR DE QUADRAS */
+        .quadra-selector { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; margin-bottom: 15px; }
+        .quadra-selector::-webkit-scrollbar { display: none; }
+        .q-tab { flex: 0 0 auto; padding: 10px 20px; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); font-weight: 800; font-size: 11px; text-transform: uppercase; color: #888; transition: 0.3s; cursor: pointer; }
+        .q-tab.active { background: var(--arena); color: black; border-color: var(--arena); box-shadow: 0 0 15px rgba(255,69,0,0.3); }
+
+        /* GRID DE HORÁRIOS */
+        .time-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        .slot { padding: 12px 5px; border-radius: 12px; background: rgba(255,255,255,0.03); text-align: center; font-weight: 700; font-size: 12px; cursor: pointer; border: 1px solid rgba(255,255,255,0.05); transition: 0.2s; position: relative; }
+        .slot.busy { opacity: 0.3; cursor: not-allowed; background: rgba(255,0,0,0.1); text-decoration: line-through; pointer-events: none; color: #666; }
+        .slot.my-booking { border-color: var(--success); color: var(--success); background: rgba(57, 255, 20, 0.05); }
+        .slot.free:hover { border-color: var(--arena); color: var(--arena); }
+
+        /* CONTROLES INTELIGENTES */
+        .smart-control { display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.05); border-radius: 16px; padding: 15px; margin-top: 15px; border: 1px solid rgba(255,255,255,0.1); }
+        .arrow-btn { width: 45px; height: 45px; background: #222; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; color: white; border: 1px solid rgba(255,255,255,0.1); transition: 0.2s; }
+        .arrow-btn:active { background: var(--arena); color: black; transform: scale(0.9); }
+        
+        /* MEUS JOGOS */
+        .booking-item { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); border-radius: 16px; padding: 15px; margin-bottom: 10px; border-left: 4px solid var(--success); }
+        .btn-delete { background: rgba(255,0,0,0.1); color: var(--danger); padding: 8px 12px; border-radius: 8px; font-size: 10px; font-weight: 800; border: 1px solid rgba(255,0,0,0.3); cursor: pointer; }
+
+        /* MODAIS */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); backdrop-filter: blur(8px); z-index: 100; display: none; align-items: center; justify-content: center; }
+        .modal-overlay.active { display: flex; }
+        .sheet { width: 90%; max-width: 400px; background: #141414; border-radius: 30px; padding: 30px; border: 1px solid rgba(255,255,255,0.1); animation: zoomIn 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+
+        .split-toggle { display: flex; background: rgba(0,0,0,0.3); border-radius: 15px; padding: 5px; margin: 20px 0; }
+        .toggle-opt { flex: 1; padding: 10px; text-align: center; font-size: 12px; font-weight: bold; border-radius: 10px; cursor: pointer; color: #666; transition: 0.3s; }
+        .toggle-opt.active { background: #333; color: white; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+        
+        @keyframes zoomIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body class="pt-24 px-4">
+
+    <header class="dash-header">
+        <div class="font-impact text-xl italic tracking-tighter">TOP <span class="text-[#FF4500]">ADMIN</span></div>
+        <div class="flex items-center gap-3">
+            <span class="text-xs font-bold text-gray-400" id="userName">...</span>
+            <button onclick="logout()" class="text-xs font-bold text-[#FF4500] border border-[#FF4500] px-3 py-1 rounded-full hover:bg-[#FF4500] hover:text-black transition">SAIR</button>
+        </div>
+    </header>
+
+    <!-- DATA -->
+    <div class="panel-card flex justify-between items-center">
+        <button onclick="mudarDia(-1)" class="text-2xl text-gray-500 hover:text-white">‹</button>
+        <div class="text-center">
+            <p class="text-[10px] uppercase font-bold text-gray-400">Data do Jogo</p>
+            <h2 class="text-xl font-black italic text-white" id="dataDisplay">HOJE</h2>
+        </div>
+        <button onclick="mudarDia(1)" class="text-2xl text-gray-500 hover:text-white">›</button>
+    </div>
+
+    <!-- QUADRA -->
+    <div class="quadra-selector">
+        <div class="q-tab active" onclick="setQuadra('Quadra 1', this)">Quadra 1</div>
+        <div class="q-tab" onclick="setQuadra('Quadra 2', this)">Quadra 2</div>
+        <div class="q-tab" onclick="setQuadra('Quadra 3', this)">Quadra 3</div>
+        <div class="q-tab" onclick="setQuadra('Campo Oficial', this)">Campo</div>
+        <div class="q-tab" onclick="setQuadra('Mini Campo', this)">Mini</div>
+    </div>
+
+    <!-- GRADE -->
+    <div class="panel-card">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-sm font-black uppercase text-gray-400">Grade Disponível</h3>
+            <span class="text-[10px] text-green-500 font-bold">● Ao Vivo</span>
+        </div>
+        <div class="time-grid" id="timeGrid"></div>
+    </div>
+
+    <!-- MEUS JOGOS -->
+    <div class="panel-card" id="myBookingsArea">
+        <h3 class="text-sm font-black uppercase text-gray-400 mb-4">Meus Jogos Futuros</h3>
+        <div id="myBookingsList"></div>
+    </div>
+
+    <!-- MODAL CONFIGURAÇÃO -->
+    <div class="modal-overlay" id="configModal">
+        <div class="sheet">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="font-impact text-2xl italic text-white">CONFIGURAR</h2>
+                <button onclick="fecharModal()" class="bg-white/10 w-8 h-8 rounded-full flex items-center justify-center text-gray-400">✕</button>
+            </div>
+
+            <div class="text-center mb-6">
+                <p class="text-xs text-gray-400 uppercase font-bold">Horário</p>
+                <div class="flex items-center justify-center gap-2 mt-2">
+                    <span class="text-3xl font-black text-white" id="modalStart">19:00</span>
+                    <span class="text-gray-600 text-xl">➔</span>
+                    <span class="text-3xl font-black text-[#FF4500]" id="modalEnd">20:00</span>
+                </div>
+                <p class="text-xs text-gray-500 mt-1 font-bold" id="modalDuration">1h de jogo</p>
+            </div>
+
+            <div class="smart-control">
+                <div class="text-xs font-bold text-gray-400 w-20">AJUSTAR<br>TÉRMINO</div>
+                <div class="flex items-center gap-6">
+                    <button class="arrow-btn" onclick="ajustarTempo(-0.5)">−</button>
+                    <button class="arrow-btn" onclick="ajustarTempo(0.5)">+</button>
+                </div>
+            </div>
+            
+            <div id="conflictMsg" class="hidden mt-4 p-3 bg-red-500/10 border border-red-500/50 rounded-xl text-center">
+                <p class="text-[10px] text-red-500 font-bold uppercase tracking-widest">⚠️ Conflito: Horário Ocupado!</p>
+            </div>
+
+            <div class="mt-6 p-4 bg-[#222] rounded-xl flex justify-between items-center border border-white/5">
+                <span class="text-xs font-bold text-gray-400 uppercase">Valor Total</span>
+                <span class="text-xl font-black text-white" id="modalPrice">R$ 150,00</span>
+            </div>
+
+            <button id="btnAvancar" onclick="abrirPagamento()" class="w-full bg-[#FF4500] text-black font-black py-5 rounded-2xl mt-6 uppercase text-xs tracking-[0.2em] shadow-lg active:scale-95 transition-all">
+                AVANÇAR
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL PAGAMENTO -->
+    <div class="modal-overlay" id="paymentModal">
+        <div class="sheet">
+            <h2 class="font-impact text-2xl italic mb-6">PAGAMENTO</h2>
+            <div class="split-toggle">
+                <div class="toggle-opt active" id="btnIndividual" onclick="setModoPagamento('individual')">Pagar Sozinho</div>
+                <div class="toggle-opt" id="btnRacha" onclick="setModoPagamento('racha')">Dividir (Racha)</div>
+            </div>
+            <div id="areaRacha" class="hidden animate-fade-in mb-6">
+                <div class="flex justify-between items-center bg-[#222] p-4 rounded-xl border border-white/10">
+                    <button class="w-8 h-8 bg-[#333] rounded-full text-white font-bold" onclick="mudarJogadores(-1)">-</button>
+                    <div class="text-center">
+                        <span class="block text-2xl font-black text-white" id="numJogadores">10</span>
+                        <span class="text-[10px] text-gray-500 uppercase">Jogadores</span>
+                    </div>
+                    <button class="w-8 h-8 bg-[#FF4500] text-black rounded-full font-bold" onclick="mudarJogadores(1)">+</button>
+                </div>
+                <div class="text-center mt-3"><p class="text-xs text-gray-400">Valor por pessoa:</p><p class="text-2xl font-bold text-[#39FF14]" id="valorPorPessoa">R$ 15,00</p></div>
+            </div>
+            <div id="areaIndividual" class="text-center py-4 mb-4"><p class="text-xs text-gray-400 uppercase">Total a Pagar</p><p class="text-4xl font-black italic text-white" id="valorTotal">R$ 150,00</p></div>
+            <button onclick="finalizarAgendamento()" class="w-full bg-[#FF4500] text-black font-black py-4 rounded-xl uppercase text-xs tracking-widest hover:scale-105 transition-all shadow-[0_0_20px_rgba(255,69,0,0.4)]">CONFIRMAR AGENDAMENTO</button>
+        </div>
+    </div>
+
+    <script>
+        // --- CHAVES REAIS DO ANDERSON ---
+        const SUPABASE_URL = 'https://ibchbcxtzngihxjschgl.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImliY2hiY3h0em5naWh4anNjaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk3MTYyNzYsImV4cCI6MjA4NTI5MjI3Nn0.ybBzyBWFQIvw6EV3F_xQwvXHJBX7wTsm05xEgRqsu34';
+
+        let supabase = null;
+        let currentUser = null;
+        
+        let state = {
+            quadra: 'Quadra 1',
+            data: new Date(),
+            horaInicio: null,
+            inicioMinutos: 0,
+            fimMinutos: 0,
+            duracao: 1,
+            precoBase: 150,
+            modoPagamento: 'individual',
+            jogadores: 10,
+            busySlots: []
+        };
+
+        // INICIALIZAÇÃO
+        window.onload = function() {
+            console.log("🚀 Dashboard carregado!");
+            alert("DEBUG: Dashboard iniciando...");
+            try {
+                if(SUPABASE_URL.startsWith('http')) {
+                    console.log("✅ URL Supabase válida");
+                    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                    console.log("✅ Cliente Supabase criado");
+                    alert("DEBUG: Supabase conectado, verificando login...");
+                    verificarLogin();
+                } else {
+                    console.error("❌ URL Supabase inválida");
+                    alert("ERRO: URL Supabase inválida");
+                }
+            } catch(e) { 
+                console.error("❌ Erro init:", e);
+                alert("ERRO INIT: " + e.message);
+            }
+        };
+
+        async function verificarLogin() {
+            console.log("🔍 Verificando login...");
+            const { data: { session } } = await supabase.auth.getSession();
+            console.log("📋 Session:", session);
+            
+            if (!session) {
+                console.warn("⚠️ Sem sessão ativa - redirecionando...");
+                alert("🔒 Acesso restrito. Faça login.");
+                window.location.href = 'index.html'; 
+            } else {
+                currentUser = session.user;
+                console.log("✅ Usuário logado:", currentUser.email);
+                
+                // ✅ Bug fix #3: Proteção caso a tabela profiles não responda
+                const { data, error } = await supabase.from('profiles').select('full_name').eq('id', currentUser.id).single();
+                let nome = (data && data.full_name) ? data.full_name : currentUser.email.split('@')[0];
+                console.log("👤 Nome do usuário:", nome);
+                document.getElementById('userName').innerText = nome.toUpperCase();
+                
+                console.log("📅 Carregando agenda...");
+                carregarAgenda();
+                carregarMeusJogos();
+            }
+        }
+
+        async function logout() {
+            await supabase.auth.signOut();
+            window.location.href = 'index.html';
+        }
+
+        // --- AGENDA INTELIGENTE ---
+        async function carregarAgenda() {
+            const dataISO = state.data.toISOString().split('T')[0];
+            document.getElementById('dataDisplay').innerText = state.data.toLocaleDateString('pt-BR');
+            
+            const { data } = await supabase.from('agendamentos')
+                .select('hora_inicio, duracao, user_id')
+                .eq('data_jogo', dataISO)
+                .eq('sub_recurso', state.quadra)
+                .neq('status', 'cancelado');
+
+            state.busySlots = [];
+            if (data) {
+                data.forEach(r => {
+                    let [h, m] = r.hora_inicio.split(':').map(Number);
+                    let inicioMin = h * 60 + m;
+                    let slots = r.duracao * 2;
+                    for(let i=0; i < slots; i++) {
+                        let total = inicioMin + (i*30);
+                        state.busySlots.push(formatTime(total));
+                    }
+                });
+            }
+            renderizarGrid();
+        }
+
+        function formatTime(minutos) {
+            let h = Math.floor(minutos / 60);
+            let m = minutos % 60;
+            return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+        }
+
+        function renderizarGrid() {
+            const container = document.getElementById('timeGrid');
+            let html = '';
+            let start = 7 * 60; // 07:00 em minutos
+            let end = 23 * 60;  // 23:00 em minutos
+            
+            for(let t = start; t < end; t += 30) {
+                let timeStr = formatTime(t);
+                let isBusy = state.busySlots.includes(timeStr);
+                let classStatus = isBusy ? 'busy' : 'free';
+                let action = isBusy ? '' : `onclick="abrirConfiguracao('${timeStr}')"`;
+                let label = timeStr;
+
+                html += `<div class="slot ${classStatus}" ${action}>${label}</div>`;
+            }
+            container.innerHTML = html;
+        }
+
+        // --- LÓGICA SETINHAS (BUGFIX #1) ---
+        function abrirConfiguracao(horario) {
+            state.horaInicio = horario;
+            let [h, m] = horario.split(':').map(Number);
+            state.inicioMinutos = h * 60 + m;
+            state.duracao = 1;
+            atualizarModal();
+            $('#configModal').addClass('active');
+        }
+
+        function ajustarTempo(delta) {
+            let novaDuracao = state.duracao + delta;
+            if (novaDuracao < 1 || novaDuracao > 4) return;
+            
+            if (delta > 0 && verificaColisao(state.inicioMinutos, novaDuracao)) {
+                $('#conflictMsg').removeClass('hidden');
+                $('#btnAvancar').prop('disabled', true).css('background', '#333').css('color', '#666');
+                return;
+            } else {
+                $('#conflictMsg').addClass('hidden');
+                $('#btnAvancar').prop('disabled', false).css('background', '#FF4500').css('color', 'black');
+            }
+            state.duracao = novaDuracao;
+            atualizarModal();
+        }
+
+        // ✅ CORREÇÃO CRÍTICA (Bug #1): Verifica desde i=0
+        function verificaColisao(inicioMin, duracao) {
+            let slotsNecessarios = duracao * 2;
+            // Verifica TODOS os slots, incluindo o inicial (para garantir que a extensão não invade)
+            for(let i=0; i<slotsNecessarios; i++) { 
+                let checkMin = inicioMin + (i*30);
+                let timeCheck = formatTime(checkMin);
+                if (state.busySlots.includes(timeCheck) || checkMin >= (23*60 + 30)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function atualizarModal() {
+            let totalMinFim = state.inicioMinutos + (state.duracao * 60);
+            state.fimMinutos = totalMinFim;
+            $('#modalStart').text(state.horaInicio);
+            $('#modalEnd').text(formatTime(totalMinFim));
+            $('#modalDuration').text(state.duracao + (state.duracao === 1 ? ' hora' : ' horas'));
+            
+            let totalVal = state.duracao * state.precoBase;
+            $('#modalPrice').text('R$ ' + totalVal.toFixed(2));
+            $('#valorTotal').text('R$ ' + totalVal.toFixed(2));
+            recalcularRacha();
+        }
+
+        // --- PAGAMENTO E FINALIZAÇÃO ---
+        function abrirPagamento() { $('#configModal').removeClass('active'); $('#paymentModal').addClass('active'); }
+        function setModoPagamento(modo) {
+            state.modoPagamento = modo; $('.toggle-opt').removeClass('active');
+            if(modo === 'racha') { $('#btnRacha').addClass('active'); $('#areaRacha').removeClass('hidden'); $('#areaIndividual').addClass('hidden'); }
+            else { $('#btnIndividual').addClass('active'); $('#areaRacha').addClass('hidden'); $('#areaIndividual').removeClass('hidden'); }
+        }
+        function mudarJogadores(d) { state.jogadores += d; if(state.jogadores < 2) state.jogadores = 2; recalcularRacha(); }
+        function recalcularRacha() {
+            let total = state.duracao * state.precoBase;
+            let porCabeca = total / state.jogadores;
+            $('#numJogadores').text(state.jogadores);
+            $('#valorPorPessoa').text(`R$ ${porCabeca.toFixed(2)}`);
+        }
+
+        async function finalizarAgendamento() {
+            const btn = document.querySelector('#paymentModal button');
+            btn.innerText = "AGENDANDO..."; btn.disabled = true;
+
+            const total = state.duracao * state.precoBase;
+            const porJogador = state.modoPagamento === 'racha' ? (total/state.jogadores) : 0;
+            const dataISO = state.data.toISOString().split('T')[0];
+
+            const { data, error } = await supabase.from('agendamentos').insert({
+                user_id: currentUser.id,
+                tipo_recurso: 'Arena',
+                sub_recurso: state.quadra,
+                data_jogo: dataISO,
+                hora_inicio: state.horaInicio,
+                hora_fim: formatTime(state.fimMinutos),
+                duracao: state.duracao,
+                status: 'confirmado',
+                racha_ativo: state.modoPagamento === 'racha',
+                num_jogadores: state.jogadores,
+                valor_por_pessoa: porJogador,
+                valor_total: total
+            });
+
+            if (error) { alert(error.message); btn.innerText = "TENTAR NOVAMENTE"; btn.disabled = false; }
+            else {
+                alert("✅ Jogo Confirmado!");
+                fecharModal();
+                carregarAgenda(); carregarMeusJogos();
+                btn.innerText = "CONFIRMAR E GERAR LINK"; btn.disabled = false;
+            }
+        }
+
+        // --- ARREPENDIMENTO (MEUS JOGOS) ---
+        async function carregarMeusJogos() {
+            const hojeISO = new Date().toISOString().split('T')[0];
+            const { data } = await supabase.from('agendamentos').select('*').eq('user_id', currentUser.id).gte('data_jogo', hojeISO).neq('status', 'cancelado').order('data_jogo');
+            const list = document.getElementById('myBookingsList');
+            list.innerHTML = '';
+            if (data && data.length > 0) {
+                data.forEach(jogo => {
+                    list.innerHTML += `<div class="booking-item"><div><p class="text-xs font-bold text-[#FF4500] uppercase">${jogo.sub_recurso} • ${jogo.duracao}h</p><p class="font-bold text-white">${jogo.data_jogo.split('-').reverse().join('/')} às ${jogo.hora_inicio}</p></div><button onclick="cancelarJogo('${jogo.id}')" class="btn-delete">LIBERAR</button></div>`;
+                });
+            } else { list.innerHTML = '<p class="text-xs text-gray-500 text-center py-4">Nenhum jogo futuro.</p>'; }
+        }
+
+        async function cancelarJogo(id) {
+            if(confirm("Liberar este horário?")) {
+                await supabase.from('agendamentos').update({ status: 'cancelado' }).eq('id', id);
+                carregarAgenda(); carregarMeusJogos();
+            }
+        }
+
+        function setQuadra(n, el) { state.quadra = n; $('.q-tab').removeClass('active'); $(el).addClass('active'); carregarAgenda(); }
+        function mudarDia(d) { state.data.setDate(state.data.getDate() + d); carregarAgenda(); }
+        function fecharModal() { $('.modal-overlay').removeClass('active'); }
+    </script>
+</body>
+</html>

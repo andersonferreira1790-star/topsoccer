@@ -6,8 +6,8 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>Painel Agendador | Top Soccer v2.0</title>
-    <!-- BUILD: 20260207-2310 -->
+    <title>Painel Agendador | Top Soccer v2.1</title>
+    <!-- BUILD: 20260228-0001 - FORCE RELOAD -->
     
     <!-- Bibliotecas -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -17,6 +17,15 @@
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
+        /* TOAST NOTIFICATION */
+        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 99999; display: flex; flex-direction: column; gap: 10px; }
+        .toast { padding: 14px 20px; border-radius: 12px; color: white; font-size: 13px; font-weight: 700; box-shadow: 0 10px 40px rgba(0,0,0,0.5); animation: toastIn 0.3s ease, toastOut 0.3s ease forwards; animation-delay: 0s, 3s; max-width: 350px; backdrop-filter: blur(10px); }
+        .toast-success { background: rgba(57,255,20,0.2); border: 1px solid #39FF14; }
+        .toast-error { background: rgba(255,0,64,0.2); border: 1px solid #FF0040; }
+        .toast-info { background: rgba(255,69,0,0.2); border: 1px solid #FF4500; }
+        @keyframes toastIn { from { opacity: 0; transform: translateX(100px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes toastOut { from { opacity: 1; } to { opacity: 0; transform: translateY(-20px); } }
+
         /* DESIGN SYSTEM DARK/NEON */
         :root { --arena: #FF4500; --bg: #050505; --card: #111; --success: #39FF14; --danger: #FF0040; }
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -63,33 +72,50 @@
         /* MODAIS CUSTOMIZADOS ESTILOSOS */
         .custom-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); backdrop-filter: blur(10px); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; }
         .custom-modal.active { display: flex; animation: fadeIn 0.2s; }
-        .modal-box { background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%); border: 1px solid rgba(255,69,0,0.3); border-radius: 30px; padding: 40px; max-width: 500px; width: 100%; box-shadow: 0 0 100px rgba(255,69,0,0.2); animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
-        .modal-icon { width: 80px; height: 80px; margin: 0 auto 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 40px; }
-        .modal-icon.link { background: linear-gradient(135deg, rgba(255,69,0,0.3), rgba(255,69,0,0.1)); border: 2px solid var(--arena); }
-        .modal-icon.success { background: linear-gradient(135deg, rgba(57,255,20,0.3), rgba(57,255,20,0.1)); border: 2px solid var(--success); }
-        .modal-icon.list { background: linear-gradient(135deg, rgba(57,255,20,0.3), rgba(57,255,20,0.1)); border: 2px solid var(--success); }
-        .modal-title { font-size: 24px; font-weight: 900; text-align: center; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
-        .modal-text { color: #888; text-align: center; font-size: 14px; line-height: 1.6; margin-bottom: 25px; }
+        .modal-box { background: linear-gradient(145deg, #161616 0%, #0c0c0c 100%); border: 1px solid rgba(255,255,255,0.06); border-radius: 24px; padding: 32px; max-width: 440px; width: 100%; box-shadow: 0 25px 80px rgba(0,0,0,0.6), 0 0 1px rgba(255,255,255,0.05); animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        .modal-icon { width: 56px; height: 56px; margin: 0 auto 16px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+        .modal-icon.link { background: rgba(255,69,0,0.08); border: 1px solid rgba(255,69,0,0.2); }
+        .modal-icon.success { background: rgba(57,255,20,0.08); border: 1px solid rgba(57,255,20,0.2); }
+        .modal-icon.list { background: rgba(57,255,20,0.08); border: 1px solid rgba(57,255,20,0.2); }
+        .modal-title { font-size: 18px; font-weight: 700; text-align: center; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 2px; color: rgba(255,255,255,0.9); }
+        .modal-text { color: #555; text-align: center; font-size: 12px; line-height: 1.6; margin-bottom: 20px; font-weight: 400; }
         .link-box { background: rgba(0,0,0,0.5); border: 2px dashed var(--arena); border-radius: 20px; padding: 20px; margin: 25px 0; position: relative; }
         .link-display { font-size: 13px; color: var(--arena); word-break: break-all; font-weight: 700; line-height: 1.5; margin-bottom: 15px; }
-        .copy-btn { width: 100%; background: var(--arena); color: black; font-weight: 900; padding: 15px; border-radius: 15px; border: none; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; transition: 0.3s; }
-        .copy-btn:hover { transform: scale(1.02); box-shadow: 0 0 30px rgba(255,69,0,0.5); }
+        .copy-btn { width: 100%; background: rgba(255,69,0,0.12); color: var(--arena); font-weight: 600; padding: 11px; border-radius: 10px; border: 1px solid rgba(255,69,0,0.25); font-size: 11px; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; transition: all 0.25s ease; }
+        .copy-btn:hover { background: rgba(255,69,0,0.2); box-shadow: 0 4px 20px rgba(255,69,0,0.1); transform: translateY(-1px); }
         .modal-actions { display: flex; gap: 10px; margin-top: 25px; }
-        .modal-btn { flex: 1; padding: 15px; border-radius: 15px; border: none; font-weight: 900; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; transition: 0.3s; }
-        .modal-btn-confirm { background: var(--arena); color: black; }
-        .modal-btn-confirm:hover { box-shadow: 0 0 30px rgba(255,69,0,0.5); }
-        .modal-btn-cancel { background: rgba(255,255,255,0.05); color: white; border: 1px solid rgba(255,255,255,0.1); }
-        .modal-btn-cancel:hover { background: rgba(255,255,255,0.1); }
+        .modal-btn { flex: 1; padding: 10px 16px; border-radius: 10px; border: none; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; cursor: pointer; transition: all 0.25s ease; opacity: 0.85; }
+        .modal-btn:hover { opacity: 1; transform: translateY(-1px); }
+        .modal-btn-confirm { background: rgba(255,69,0,0.15); color: var(--arena); border: 1px solid rgba(255,69,0,0.3); }
+        .modal-btn-confirm:hover { background: rgba(255,69,0,0.25); box-shadow: 0 4px 20px rgba(255,69,0,0.15); }
+        .modal-btn-cancel { background: rgba(255,255,255,0.03); color: #666; border: 1px solid rgba(255,255,255,0.08); }
+        .modal-btn-cancel:hover { background: rgba(255,255,255,0.06); color: #999; }
+        .modal-btn-danger { background: rgba(255,50,50,0.1); color: #ff6b6b; border: 1px solid rgba(255,50,50,0.2); }
+        .modal-btn-danger:hover { background: rgba(255,50,50,0.18); box-shadow: 0 4px 20px rgba(255,50,50,0.1); }
         
         /* LISTA DE PARTICIPANTES */
         .participant-list { max-height: 400px; overflow-y: auto; margin: 20px 0; }
-        .participant-item { background: rgba(255,255,255,0.03); border-radius: 15px; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border-left: 3px solid var(--success); }
-        .participant-item.pendente { border-left-color: orange; }
-        .participant-info h4 { font-size: 14px; font-weight: 900; color: white; margin-bottom: 3px; }
-        .participant-info p { font-size: 11px; color: #666; }
-        .status-badge { padding: 6px 12px; border-radius: 10px; font-size: 10px; font-weight: 900; text-transform: uppercase; }
-        .status-badge.pago { background: rgba(57,255,20,0.2); color: var(--success); border: 1px solid var(--success); }
-        .status-badge.pendente { background: rgba(255,165,0,0.2); color: orange; border: 1px solid orange; }
+        .participant-list::-webkit-scrollbar { width: 3px; }
+        .participant-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+        .participant-item { background: rgba(255,255,255,0.02); border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border-left: 2px solid rgba(57,255,20,0.4); transition: background 0.2s; }
+        .participant-item:hover { background: rgba(255,255,255,0.04); }
+        .participant-item.pendente { border-left-color: rgba(255,165,0,0.5); }
+        .participant-info h4 { font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.9); margin-bottom: 2px; letter-spacing: 0.3px; }
+        .participant-info p { font-size: 10px; color: #555; letter-spacing: 0.2px; }
+        .participant-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+        .status-badge { padding: 4px 10px; border-radius: 8px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        .status-badge.pago { background: rgba(57,255,20,0.08); color: rgba(57,255,20,0.7); border: 1px solid rgba(57,255,20,0.2); }
+        .status-badge.pendente { background: rgba(255,165,0,0.08); color: rgba(255,165,0,0.7); border: 1px solid rgba(255,165,0,0.2); }
+        .status-badge.isento { background: rgba(0,150,255,0.08); color: rgba(100,180,255,0.9); border: 1px solid rgba(0,150,255,0.2); }
+        .participant-item.isento { border-left-color: rgba(0,150,255,0.5); }
+        .btn-delete-participant { background: transparent; border: 1px solid rgba(255,80,80,0.15); color: rgba(255,80,80,0.4); width: 26px; height: 26px; border-radius: 8px; cursor: pointer; font-size: 11px; display: flex; align-items: center; justify-content: center; transition: all 0.25s ease; }
+        .btn-delete-participant:hover { background: rgba(255,50,50,0.1); color: rgba(255,80,80,0.8); border-color: rgba(255,80,80,0.3); }
+        /* FORM INPUTS MODAL */
+        .form-input { width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; color: rgba(255,255,255,0.9); font-size: 13px; font-weight: 400; margin-bottom: 8px; outline: none; transition: all 0.2s ease; box-sizing: border-box; }
+        .form-input:focus { border-color: rgba(255,69,0,0.4); background: rgba(255,255,255,0.04); }
+        .form-input::placeholder { color: #444; font-weight: 400; }
+        .form-checkbox-label { display: flex; align-items: center; gap: 10px; color: #666; font-size: 12px; padding: 8px 0; cursor: pointer; font-weight: 500; }
+        .form-checkbox-label input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--arena); cursor: pointer; }
         
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
@@ -203,7 +229,7 @@
                 </div>
                 <div class="text-center mt-3"><p class="text-xs text-gray-400">Valor por pessoa:</p><p class="text-2xl font-bold text-[#39FF14]" id="valorPorPessoa">R$ 15,00</p></div>
             </div>
-            <div id="areaIndividual" class="text-center py-4 mb-4"><p class="text-xs text-gray-400 uppercase">Total a Pagar</p><p class="text-4xl font-black italic text-white" id="valorTotal">R$ 150,00</p></div>
+            <div id="areaIndividual" class="text-center py-4 mb-4"><p class="text-xs text-gray-400 uppercase">Total a Pagar</p><p class="text-4xl font-black italic text-white" id="valorTotal">R$ 75,00</p></div>
             <button onclick="finalizarAgendamento()" class="w-full bg-[#FF4500] text-black font-black py-4 rounded-xl uppercase text-xs tracking-widest hover:scale-105 transition-all shadow-[0_0_20px_rgba(255,69,0,0.4)]">CONFIRMAR AGENDAMENTO</button>
         </div>
     </div>
@@ -212,14 +238,29 @@
     <div id="linkModal" class="custom-modal">
         <div class="modal-box">
             <div class="modal-icon link">🔗</div>
-            <h2 class="modal-title">Link de Convite Gerado!</h2>
-            <p class="modal-text">Compartilhe este link com os jogadores para que possam se inscrever no racha.</p>
+            <h2 class="modal-title" id="linkModalTitle">Links Gerados!</h2>
+            <p class="modal-text" id="linkModalDesc">Compartilhe os links abaixo.</p>
             
-            <div class="link-box">
-                <p class="link-display" id="linkDisplay"></p>
-                <button class="copy-btn" onclick="copiarLinkModal()">
-                    📋 COPIAR LINK
-                </button>
+            <!-- LINK 1: Pagamento (só aparece no modo individual) -->
+            <div id="linkPagamentoArea" style="display: none;">
+                <p style="color: var(--arena); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">💳 Link de Pagamento (enviar para quem vai pagar)</p>
+                <div class="link-box" style="border-color: var(--arena);">
+                    <p class="link-display" id="linkPagamentoDisplay" style="color: var(--arena);"></p>
+                    <button class="copy-btn" onclick="copiarLinkEspecifico('linkPagamentoDisplay')">
+                        📋 COPIAR LINK PAGAMENTO
+                    </button>
+                </div>
+            </div>
+
+            <!-- LINK 2: Convite (aparece em ambos os modos) -->
+            <div id="linkConviteArea">
+                <p id="linkConviteLabel" style="color: var(--success); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">👥 Link de Convite (confirmação de presença)</p>
+                <div class="link-box" style="border-color: var(--success);">
+                    <p class="link-display" id="linkDisplay" style="color: var(--success);"></p>
+                    <button class="copy-btn" style="background: rgba(57,255,20,0.12); color: var(--success); border-color: rgba(57,255,20,0.25);" onclick="copiarLinkEspecifico('linkDisplay')">
+                        📋 COPIAR LINK CONVITE
+                    </button>
+                </div>
             </div>
             
             <p class="modal-text">⚠️ <strong>Ao confirmar, o horário será RESERVADO</strong></p>
@@ -236,7 +277,7 @@
             <div class="modal-icon success">✓</div>
             <h2 class="modal-title">Reserva Confirmada!</h2>
             <p class="modal-text">Seu horário foi reservado com sucesso. O link de convite está disponível para compartilhamento.</p>
-            <button class="modal-btn modal-btn-confirm" style="width:100%; margin-top: 20px;" onclick="fecharModalCustom('successModal')">FECHAR</button>
+            <button class="modal-btn modal-btn-confirm" style="width:100%; margin-top: 16px;" onclick="fecharModalCustom('successModal')">Fechar</button>
         </div>
     </div>
 
@@ -248,17 +289,126 @@
             
             <div class="participant-list" id="participantList"></div>
             
-            <button class="modal-btn modal-btn-confirm" style="width:100%; margin-top: 20px;" onclick="fecharModalCustom('participantModal')">FECHAR</button>
+            <div style="display: flex; gap: 10px; margin-top: 16px;">
+                <button class="modal-btn modal-btn-confirm" style="flex:1;" onclick="atualizarParticipantes()">Atualizar</button>
+                <button class="modal-btn modal-btn-cancel" style="flex:1;" onclick="fecharModalCustom('participantModal')">Fechar</button>
+            </div>
         </div>
     </div>
 
+    <!-- MODAL ADICIONAR PARTICIPANTE -->
+    <div id="addParticipantModal" class="custom-modal">
+        <div class="modal-box">
+            <div class="modal-icon" style="background: rgba(255,69,0,0.06); border: 1px solid rgba(255,69,0,0.15);">➕</div>
+            <h2 class="modal-title" style="font-size: 16px;">Adicionar Participante</h2>
+            <div style="margin: 12px 0;">
+                <input type="text" id="addNome" class="form-input" placeholder="Nome do jogador *">
+                <input type="text" id="addTelefone" class="form-input" placeholder="Telefone / WhatsApp *">
+                <input type="email" id="addEmail" class="form-input" placeholder="E-mail (opcional)">
+                <label class="form-checkbox-label">
+                    <input type="checkbox" id="addPago">
+                    <span>Já pagou?</span>
+                </label>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 12px;">
+                <button class="modal-btn modal-btn-confirm" style="flex:1;" onclick="confirmarAdicionarParticipante()">Adicionar</button>
+                <button class="modal-btn modal-btn-cancel" style="flex:1;" onclick="fecharModalCustom('addParticipantModal')">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CONFIRMAR EXCLUSÃO -->
+    <div id="confirmDeleteModal" class="custom-modal">
+        <div class="modal-box">
+            <div class="modal-icon" style="background: rgba(255,80,80,0.06); border: 1px solid rgba(255,80,80,0.15); color: #ff6b6b; font-size: 22px;">✕</div>
+            <h2 class="modal-title" style="color: rgba(255,100,100,0.8); font-size: 16px;">Remover Participante?</h2>
+            <p class="modal-text" id="confirmDeleteMsg">Tem certeza que deseja remover este jogador da lista?</p>
+            <div style="display: flex; gap: 10px; margin-top: 16px;">
+                <button class="modal-btn modal-btn-danger" style="flex:1;" id="btnConfirmDelete">Remover</button>
+                <button class="modal-btn modal-btn-cancel" style="flex:1;" onclick="fecharModalCustom('confirmDeleteModal')">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE REDIRECIONAMENTO PARA PAGAMENTO -->
+    <div id="redirectModal" class="custom-modal">
+        <div class="modal-box" style="max-width: 500px;">
+            <div class="modal-icon success" style="font-size: 60px;">💳</div>
+            <h2 class="modal-title" style="color: var(--arena);">Agendamento Criado!</h2>
+            <p class="modal-text" id="redirectMessage" style="margin: 20px 0; line-height: 1.6;">
+                Seu agendamento foi criado com sucesso!
+            </p>
+            
+            <!-- Info do agendamento -->
+            <div style="background: rgba(255,255,255,0.03); border-radius: 15px; padding: 20px; margin: 20px 0; border: 1px solid rgba(255,69,0,0.3);">
+                <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <span style="color: #888; font-size: 12px; text-transform: uppercase;">💰 Valor:</span>
+                    <span id="redirectValor" style="color: var(--arena); font-weight: 900; font-size: 18px;">R$ 150,00</span>
+                </div>
+                <!-- Link de Convite (para compartilhar com jogadores) -->
+                <div id="redirectConviteLinkArea" style="display: none; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.05); margin-top: 15px;">
+                    <p style="color: var(--success); font-size: 11px; text-transform: uppercase; margin-bottom: 10px; font-weight: 800;">👥 Link de Convite (compartilhe com os jogadores):</p>
+                    <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 10px; word-break: break-all; font-size: 11px; color: var(--success); border: 1px dashed var(--success); cursor: pointer;" onclick="copiarTexto(document.getElementById('redirectConviteLink').textContent)">
+                        <span id="redirectConviteLink">https://...</span>
+                    </div>
+                    <button class="copy-btn" style="margin-top: 8px; background: rgba(57,255,20,0.12); color: var(--success); border-color: rgba(57,255,20,0.25);" onclick="copiarTexto(document.getElementById('redirectConviteLink').textContent)">
+                        📋 COPIAR LINK CONVITE
+                    </button>
+                </div>
+                <!-- Link de Pagamento (para quem vai pagar) -->
+                <div id="redirectLinkArea" style="display: none; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.05); margin-top: 15px;">
+                    <p style="color: var(--arena); font-size: 11px; text-transform: uppercase; margin-bottom: 10px; font-weight: 800;">💳 Link de Pagamento (enviar para quem vai pagar):</p>
+                    <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 10px; word-break: break-all; font-size: 11px; color: var(--arena); border: 1px dashed var(--arena); cursor: pointer;" onclick="copiarTexto(document.getElementById('redirectLink').textContent)">
+                        <span id="redirectLink">https://...</span>
+                    </div>
+                    <button class="copy-btn" style="margin-top: 8px;" onclick="copiarTexto(document.getElementById('redirectLink').textContent)">
+                        📋 COPIAR LINK PAGAMENTO
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Área de auto-redirect (só para racha) -->
+            <div id="redirectAutoArea" style="background: rgba(255,69,0,0.1); border-radius: 10px; padding: 15px; margin-bottom: 20px; border-left: 3px solid var(--arena);">
+                <p style="font-size: 13px; color: #bbb; margin: 0;">
+                    ⏱️ <strong style="color: white;">Redirecionando para pagamento em <span id="redirectCounter">3</span>s...</strong>
+                </p>
+            </div>
+            
+            <button id="btnIrPagamento" class="modal-btn modal-btn-confirm" style="width:100%; background: var(--arena);" onclick="irParaPagamentoAgora()">
+                💳 IR PARA PAGAMENTO AGORA
+            </button>
+            <!-- Botão fechar (para modo individual - admin não precisa pagar) -->
+            <button id="btnFecharRedirect" class="modal-btn modal-btn-cancel" style="width:100%; margin-top: 10px; display: none;" onclick="fecharModalRedirect(); carregarAgenda(); carregarMeusJogos();">
+                ✓ FECHAR E VOLTAR AO PAINEL
+            </button>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
     <script>
+        // TOAST NOTIFICATION SYSTEM
+        function showToast(msg, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+            toast.className = 'toast toast-' + type;
+            toast.textContent = icon + ' ' + msg;
+            container.appendChild(toast);
+            setTimeout(() => { if (toast.parentNode) toast.remove(); }, 3500);
+        }
+
         // --- CHAVES REAIS DO ANDERSON ---
         const SUPABASE_URL = 'https://ibchbcxtzngihxjschgl.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImliY2hiY3h0em5naWh4anNjaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk3MTYyNzYsImV4cCI6MjA4NTI5MjI3Nn0.ybBzyBWFQIvw6EV3F_xQwvXHJBX7wTsm05xEgRqsu34';
 
         let supabaseClient = null;
         let currentUser = null;
+        let currentAgendamentoId = null; // ID do agendamento sendo visualizado
+        let redirectTimeout = null; // Timeout do redirecionamento
+        let redirectIntervalId = null; // Interval do contador
+        let redirectUrl = ''; // URL para redirecionar
         
         let state = {
             quadra: 'Quadra 1',
@@ -267,11 +417,123 @@
             inicioMinutos: 0,
             fimMinutos: 0,
             duracao: 1,
-            precoBase: 150,
+            precoBase: 75,
             modoPagamento: 'individual',
             jogadores: 10,
             busySlots: []
         };
+
+        // TABELA DE PREÇOS POR QUADRA (valor por hora)
+        const PRECOS = {
+            'Quadra 1': 75,
+            'Quadra 2': 85,
+            'Quadra 3': 85,
+            'Campo Oficial': 190,
+            'Mini Campo': 75
+        };
+
+        // FUNÇÕES DO MODAL DE REDIRECIONAMENTO
+        function copiarTexto(texto) {
+            navigator.clipboard.writeText(texto).then(() => {
+                showToast('Link copiado!', 'success');
+            }).catch(() => {
+                prompt('Copie o link:', texto);
+            });
+        }
+
+        function copiarLinkEspecifico(elementId) {
+            const texto = document.getElementById(elementId).textContent;
+            copiarTexto(texto);
+        }
+
+        function mostrarModalRedirect(config) {
+            // config = { valor, conviteLink, pagamentoLink (opcional), agendamentoId, modo }
+            document.getElementById('redirectValor').textContent = `R$ ${config.valor.toFixed(2)}`;
+            
+            if (config.modo === 'individual') {
+                // MODO INDIVIDUAL: mostrar 2 links, sem auto-redirect
+                document.getElementById('redirectMessage').textContent = 
+                    `Agendamento criado! Valor total: R$ ${config.valor.toFixed(2)}. Copie os links abaixo para compartilhar.`;
+                
+                // Mostrar link de convite
+                if (config.conviteLink) {
+                    document.getElementById('redirectConviteLinkArea').style.display = 'block';
+                    document.getElementById('redirectConviteLink').textContent = config.conviteLink;
+                }
+                // Mostrar link de pagamento
+                if (config.pagamentoLink) {
+                    document.getElementById('redirectLinkArea').style.display = 'block';
+                    document.getElementById('redirectLink').textContent = config.pagamentoLink;
+                }
+                
+                // Sem auto-redirect (admin não paga)
+                document.getElementById('redirectAutoArea').style.display = 'none';
+                document.getElementById('btnIrPagamento').style.display = 'none';
+                document.getElementById('btnFecharRedirect').style.display = 'block';
+                
+            } else {
+                // MODO RACHA: link convite + auto-redirect para pagamento
+                document.getElementById('redirectMessage').textContent = 
+                    `Valor por pessoa: R$ ${config.valor.toFixed(2)}. Compartilhe o link de convite no WhatsApp!`;
+                
+                if (config.conviteLink) {
+                    document.getElementById('redirectConviteLinkArea').style.display = 'block';
+                    document.getElementById('redirectConviteLink').textContent = config.conviteLink;
+                }
+                document.getElementById('redirectLinkArea').style.display = 'none';
+                
+                // Auto-redirect ativo
+                document.getElementById('redirectAutoArea').style.display = 'block';
+                document.getElementById('btnIrPagamento').style.display = 'block';
+                document.getElementById('btnFecharRedirect').style.display = 'none';
+                
+                // Salvar URL de redirecionamento
+                redirectUrl = `pagamento.html?agendamento=${config.agendamentoId}`;
+                
+                // Iniciar contador regressivo
+                let contador = 5;
+                document.getElementById('redirectCounter').textContent = contador;
+                
+                redirectIntervalId = setInterval(() => {
+                    contador--;
+                    document.getElementById('redirectCounter').textContent = contador;
+                    
+                    if (contador <= 0) {
+                        clearInterval(redirectIntervalId);
+                        irParaPagamentoAgora();
+                    }
+                }, 1000);
+            }
+            
+            // Mostrar modal
+            document.getElementById('redirectModal').classList.add('active');
+        }
+
+        function irParaPagamentoAgora() {
+            console.log('🚀 Iniciando redirecionamento para pagamento...');
+            console.log('🔗 URL:', redirectUrl);
+            
+            // Limpar contador
+            if (redirectIntervalId) {
+                clearInterval(redirectIntervalId);
+            }
+            
+            // Redirecionar
+            if (redirectUrl) {
+                console.log('✅ Redirecionando agora!');
+                window.location.href = redirectUrl;
+            } else {
+                console.error('❌ URL de redirecionamento não definida!');
+                showToast('URL não definida', 'error');
+            }
+        }
+
+        function fecharModalRedirect() {
+            if (redirectIntervalId) {
+                clearInterval(redirectIntervalId);
+            }
+            document.getElementById('redirectModal').classList.remove('active');
+        }
 
         // INICIALIZAÇÃO
         window.onload = function() {
@@ -279,32 +541,46 @@
             
             // Verificar se jQuery carregou
             if(typeof jQuery === 'undefined') {
-                alert("ERRO: jQuery não carregou!");
+                console.error('jQuery não carregou');
                 return;
             }
             
             // Verificar se Supabase carregou
             if(typeof window.supabase === 'undefined') {
-                alert("ERRO: Supabase não carregou!");
+                console.error('Supabase não carregou');
                 return;
             }
             
-            alert("DEBUG: Bibliotecas OK! Iniciando...");
+            console.log('Bibliotecas OK! Iniciando...');
             
             try {
                 if(SUPABASE_URL.startsWith('http')) {
                     console.log("✅ URL Supabase válida");
                     supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
                     console.log("✅ Cliente Supabase criado");
-                    alert("DEBUG: Supabase conectado, verificando login...");
+                    
+                    // Listener para mudanças de autenticação (captura retorno do Google OAuth)
+                    supabaseClient.auth.onAuthStateChange((event, session) => {
+                        console.log('🔐 Auth event no admin:', event);
+                        if (event === 'SIGNED_IN' && session) {
+                            console.log('✅ Login OAuth detectado no admin');
+                            currentUser = session.user;
+                            localStorage.setItem('userEmail', currentUser.email);
+                            localStorage.setItem('userId', currentUser.id);
+                            localStorage.setItem('loginTime', Date.now());
+                            verificarLogin();
+                        }
+                    });
+                    
+                    console.log('Supabase conectado, verificando login...');
                     verificarLogin();
                 } else {
                     console.error("❌ URL Supabase inválida");
-                    alert("ERRO: URL Supabase inválida");
+                    console.error('URL Supabase inválida');
                 }
             } catch(e) { 
                 console.error("❌ Erro init:", e);
-                alert("ERRO INIT: " + e.message);
+                console.error('Erro init:', e.message);
             }
         };
 
@@ -315,7 +591,6 @@
             
             if (!session) {
                 console.warn("⚠️ Sem sessão ativa - redirecionando...");
-                alert("🔒 Acesso restrito. Faça login.");
                 window.location.href = 'index.html'; 
             } else {
                 currentUser = session.user;
@@ -471,6 +746,9 @@
         }
 
         async function finalizarAgendamento() {
+            console.log('🎯 finalizarAgendamento() chamado!');
+            console.log('📋 Modo:', state.modoPagamento);
+            
             const btn = document.querySelector('#paymentModal button');
             btn.innerText = "PROCESSANDO..."; btn.disabled = true;
 
@@ -478,27 +756,50 @@
             const porJogador = state.modoPagamento === 'racha' ? (total/state.jogadores) : 0;
             const dataISO = state.data.toISOString().split('T')[0];
 
-            // Se Racha ativo, gerar UUID e mostrar modal ANTES de criar
-            let linkConvite = null;
+            // SEMPRE gerar link de convite (para ambos os modos)
+            let linkConvite = gerarUUID();
+            const urlConvite = window.location.origin + '/convite.html?id=' + linkConvite;
+            
+            console.log('🔗 Link convite gerado:', urlConvite);
+            console.log('🔑 UUID:', linkConvite);
+            
+            // Configurar modal de links
+            document.getElementById('linkDisplay').textContent = urlConvite;
+            state.linkConvitePendente = linkConvite;
+
             if (state.modoPagamento === 'racha') {
-                linkConvite = gerarUUID();
-                const urlCompleta = window.location.origin + '/convite.html?id=' + linkConvite;
-                
-                // Mostrar modal customizado com link
-                document.getElementById('linkDisplay').textContent = urlCompleta;
-                document.getElementById('linkModal').classList.add('active');
-                
-                // Salvar o linkConvite para usar depois
-                state.linkConvitePendente = linkConvite;
-                
-                // Resetar botão
-                btn.innerText = "✓ CONFIRMAR AGENDAMENTO";
-                btn.disabled = false;
-                return; // Aguarda confirmação do usuário no modal
+                console.log('🔀 Modo RACHA - mostrando 1 link');
+                document.getElementById('linkModalTitle').textContent = 'Link de Convite Gerado!';
+                document.getElementById('linkModalDesc').textContent = 'Compartilhe este link com os jogadores para que possam se inscrever e pagar sua parte.';
+                document.getElementById('linkPagamentoArea').style.display = 'none';
+                document.getElementById('linkConviteLabel').textContent = '👥 Link de Convite (jogadores pagam ao se inscrever)';
+                document.getElementById('linkDisplay').style.color = 'var(--success)';
+            } else {
+                console.log('💳 Modo INDIVIDUAL - mostrando 2 links');
+                const urlPagamento = window.location.origin + '/convite.html?id=' + linkConvite + '&tipo=pagamento';
+                console.log('💳 Link pagamento:', urlPagamento);
+                document.getElementById('linkModalTitle').textContent = '2 Links Gerados!';
+                document.getElementById('linkModalDesc').textContent = 'Envie o link de PAGAMENTO para quem vai pagar o jogo inteiro. Envie o link de CONVITE para os demais jogadores confirmarem presença.';
+                document.getElementById('linkPagamentoArea').style.display = 'block';
+                document.getElementById('linkPagamentoDisplay').textContent = urlPagamento;
+                document.getElementById('linkConviteLabel').textContent = '👥 Link de Convite (apenas confirmação de presença)';
+                document.getElementById('linkDisplay').style.color = 'var(--success)';
             }
 
-            // Se não for racha, criar direto
-            await criarAgendamento(null);
+            console.log('📦 Abrindo modal linkModal...');
+            
+            // Fechar o modal de pagamento primeiro
+            $('#paymentModal').removeClass('active');
+            
+            // Abrir o modal de links com delay para não conflitar
+            setTimeout(() => {
+                document.getElementById('linkModal').classList.add('active');
+                console.log('✅ Modal linkModal aberto!');
+            }, 300);
+
+            // Resetar botão
+            btn.innerText = "✓ CONFIRMAR AGENDAMENTO";
+            btn.disabled = false;
         }
 
         async function confirmarReserva() {
@@ -510,14 +811,28 @@
         function cancelarReserva() {
             document.getElementById('linkModal').classList.remove('active');
             state.linkConvitePendente = null;
-            alert("❌ Reserva cancelada");
+            showToast('Reserva cancelada', 'info');
         }
 
         async function criarAgendamento(linkConvite) {
+            console.log('🔄 Criando agendamento...');
+            console.log('💰 Modo pagamento:', state.modoPagamento);
+            
             const total = state.duracao * state.precoBase;
             const porJogador = state.modoPagamento === 'racha' ? (total/state.jogadores) : total;
             const dataISO = state.data.toISOString().split('T')[0];
 
+            console.log('📤 Enviando para Supabase...');
+            console.log('📋 Dados:', {
+                user_id: currentUser.id,
+                quadra: state.quadra,
+                data: dataISO,
+                hora: state.horaInicio,
+                valor_total: total,
+                valor_por_pessoa: porJogador
+            });
+
+            // Criar agendamento com status 'interesse' (pendente pagamento)
             const { data, error } = await supabaseClient.from('agendamentos').insert({
                 user_id: currentUser.id,
                 tipo_recurso: 'Arena',
@@ -526,7 +841,7 @@
                 hora_inicio: state.horaInicio,
                 hora_fim: formatTime(state.fimMinutos),
                 duracao: state.duracao,
-                status: 'confirmado',
+                status: 'interesse', // ⚠️ Começa como interesse, vira confirmado após pagamento
                 racha_ativo: state.modoPagamento === 'racha',
                 num_jogadores: state.jogadores,
                 valor_por_pessoa: porJogador,
@@ -534,14 +849,61 @@
                 link_convite: linkConvite
             }).select().single();
 
+            console.log('📥 Resposta do Supabase:', { data, error });
+
             if (error) { 
-                alert("❌ Erro ao agendar: " + error.message);
+                console.error('❌ Erro ao agendar:', error);
+                showToast('Erro ao agendar: ' + error.message, 'error');
+                return; // Parar aqui se der erro
+            }
+            
+            if (!data || !data.id) {
+                console.error('❌ Agendamento criado mas sem ID!');
+                showToast('Erro: Agendamento sem ID!', 'error');
+                return; // Parar se não tiver ID
+            }
+
+            console.log('✅ Agendamento confirmado no Supabase!');
+            console.log('📋 ID gerado:', data.id);
+            console.log('📊 Status:', data.status);
+            
+            // Fechar modais
+            fecharModal();
+            document.getElementById('linkModal').classList.remove('active');
+            
+            // Salvar dados no localStorage para página de pagamento
+            localStorage.setItem('agendamento_pendente_id', data.id);
+            localStorage.setItem('agendamento_pendente_quadra', state.quadra);
+            localStorage.setItem('agendamento_pendente_data', dataISO);
+            localStorage.setItem('agendamento_pendente_hora', state.horaInicio);
+            localStorage.setItem('agendamento_pendente_valor', total);
+            localStorage.setItem('agendamento_pendente_valor_por_pessoa', porJogador);
+            localStorage.setItem('agendamento_pendente_modo', state.modoPagamento);
+            
+            console.log('💾 Dados salvos no localStorage');
+            console.log('🔗 Preparando redirecionamento para:', `pagamento.html?agendamento=${data.id}`);
+            
+            // Mostrar modal bonito de redirecionamento
+            const urlConviteLink = linkConvite ? window.location.origin + '/convite.html?id=' + linkConvite : null;
+            
+            if (state.modoPagamento === 'individual') {
+                // MODO INDIVIDUAL: mostrar links sem auto-redirect (admin não paga aqui)
+                const urlPagamentoLink = linkConvite ? window.location.origin + '/convite.html?id=' + linkConvite + '&tipo=pagamento' : null;
+                mostrarModalRedirect({
+                    valor: total,
+                    conviteLink: urlConviteLink,
+                    pagamentoLink: urlPagamentoLink,
+                    agendamentoId: data.id,
+                    modo: 'individual'
+                });
             } else {
-                // Mostrar modal de sucesso
-                document.getElementById('successModal').classList.add('active');
-                fecharModal();
-                carregarAgenda(); 
-                carregarMeusJogos();
+                // MODO RACHA: auto-redirect para pagamento
+                mostrarModalRedirect({
+                    valor: porJogador,
+                    conviteLink: urlConviteLink,
+                    agendamentoId: data.id,
+                    modo: 'racha'
+                });
             }
         }
 
@@ -588,9 +950,10 @@
                                 <p class="text-xs font-bold text-[#FF4500] uppercase">${jogo.sub_recurso} • ${jogo.duracao}h</p>
                                 <p class="font-bold text-white">${jogo.data_jogo.split('-').reverse().join('/')} às ${jogo.hora_inicio}</p>`;
                     
-                    // Se tem Racha ativo, mostrar link e participantes
-                    if (jogo.racha_ativo && jogo.link_convite) {
+                    // Se tem link_convite (racha OU individual com convite), mostrar botões
+                    if (jogo.link_convite) {
                         const urlConvite = window.location.origin + '/convite.html?id=' + jogo.link_convite;
+                        const urlPagamento = !jogo.racha_ativo ? window.location.origin + '/convite.html?id=' + jogo.link_convite + '&tipo=pagamento' : null;
                         
                         // Buscar participantes
                         const { data: participantes } = await supabaseClient
@@ -600,19 +963,30 @@
                         
                         const numInscritos = participantes ? participantes.length : 0;
                         const numPagos = participantes ? participantes.filter(p => p.status_pagamento === 'pago').length : 0;
+                        const numConfirmados = participantes ? participantes.filter(p => p.status_pagamento === 'isento').length : 0;
                         
                         jogoHTML += `
                                 <p class="text-xs text-gray-400 mt-2">
-                                    👥 Inscritos: ${numInscritos}/${jogo.num_jogadores} | 
-                                    ✅ Pagos: ${numPagos}
+                                    👥 Inscritos: ${numInscritos}${jogo.racha_ativo ? '/' + jogo.num_jogadores : ''} | 
+                                    ✅ Pagos: ${numPagos}${numConfirmados > 0 ? ' | 🔵 Confirmados: ' + numConfirmados : ''}
                                 </p>
                                 <button onclick="copiarLink('${urlConvite}')" class="text-[10px] bg-green-500/20 text-green-500 px-2 py-1 rounded mt-2 border border-green-500/50">
-                                    📋 COPIAR LINK
-                                </button>
+                                    📋 LINK CONVITE
+                                </button>`;
+                        
+                        // Mostrar link de pagamento separado para modo individual
+                        if (urlPagamento) {
+                            jogoHTML += `
+                                <button onclick="copiarLink('${urlPagamento}')" class="text-[10px] bg-orange-500/20 text-orange-400 px-2 py-1 rounded mt-2 ml-2 border border-orange-500/50">
+                                    💳 LINK PAGAMENTO
+                                </button>`;
+                        }
+                        
+                        jogoHTML += `
                                 <button onclick="verParticipantes('${jogo.id}')" class="text-[10px] bg-blue-500/20 text-blue-500 px-2 py-1 rounded mt-2 ml-2 border border-blue-500/50">
                                     👥 VER LISTA
                                 </button>
-                                <button onclick="adicionarParticipante('${jogo.id}', ${jogo.num_jogadores})" class="text-[10px] bg-purple-500/20 text-purple-500 px-2 py-1 rounded mt-2 ml-2 border border-purple-500/50">
+                                <button onclick="adicionarParticipante('${jogo.id}', ${jogo.num_jogadores || 20})" class="text-[10px] bg-purple-500/20 text-purple-500 px-2 py-1 rounded mt-2 ml-2 border border-purple-500/50">
                                     ➕ ADICIONAR
                                 </button>`;
                     }
@@ -644,6 +1018,9 @@
 
         async function verParticipantes(agendamentoId) {
             try {
+                // Salvar ID para função de atualizar
+                currentAgendamentoId = agendamentoId;
+                
                 const { data: jogo, error: erroJogo } = await supabaseClient
                     .from('agendamentos')
                     .select('num_jogadores')
@@ -652,26 +1029,30 @@
                 
                 if (erroJogo) {
                     console.error('Erro ao buscar jogo:', erroJogo);
-                    alert('❌ Erro ao buscar dados do jogo: ' + erroJogo.message);
+                    showToast('Erro ao buscar dados do jogo: ' + erroJogo.message, 'error');
                     return;
                 }
+
+                // Salvar maxJogadores para uso no modal de adicionar
+                currentMaxJogadores = jogo.num_jogadores;
                 
                 const { data, error } = await supabaseClient
                     .from('participantes_jogo')
                     .select('*')
-                    .eq('agendamento_id', agendamentoId)
-                    .order('data_inscricao', { ascending: false });
+                    .eq('agendamento_id', agendamentoId);
                 
                 console.log('Participantes encontrados:', data);
                 console.log('Erro na query:', error);
                 
                 if (error) {
-                    alert('❌ Erro ao buscar participantes: ' + error.message);
+                    showToast('Erro ao buscar participantes: ' + error.message, 'error');
                     return;
                 }
                 
                 if (!data || data.length === 0) {
-                    alert("ℹ️ Nenhum participante inscrito ainda.");
+                    document.getElementById('participantCount').textContent = `0 de ${jogo.num_jogadores} jogadores`;
+                    document.getElementById('participantList').innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">Nenhum participante inscrito ainda. Compartilhe o link!</p>';
+                    document.getElementById('participantModal').classList.add('active');
                     return;
                 }
                 
@@ -680,8 +1061,18 @@
                 
                 let html = '';
                 for(let p of data) {
-                    const statusClass = p.status_pagamento === 'pago' ? 'pago' : 'pendente';
-                    const statusText = p.status_pagamento === 'pago' ? '✓ Pago' : '⏳ Pendente';
+                    let statusClass, statusText;
+                    if (p.status_pagamento === 'pago') {
+                        statusClass = 'pago';
+                        statusText = '✓ Pago';
+                    } else if (p.status_pagamento === 'isento') {
+                        statusClass = 'isento';
+                        statusText = '✓ Confirmado';
+                    } else {
+                        statusClass = 'pendente';
+                        statusText = '⏳ Pendente';
+                    }
+                    const nomeEscaped = (p.nome_jogador || '').replace(/'/g, "\\'");
                     
                     html += `
                         <div class="participant-item ${statusClass}">
@@ -690,7 +1081,10 @@
                                 <p>📱 ${p.telefone}</p>
                                 ${p.email ? `<p>✉️ ${p.email}</p>` : ''}
                             </div>
-                            <span class="status-badge ${statusClass}">${statusText}</span>
+                            <div class="participant-actions">
+                                <span class="status-badge ${statusClass}">${statusText}</span>
+                                <button class="btn-delete-participant" onclick="pedirRemoverParticipante('${p.id}', '${nomeEscaped}')" title="Remover">🗑️</button>
+                            </div>
                         </div>
                     `;
                 }
@@ -699,9 +1093,24 @@
                 document.getElementById('participantModal').classList.add('active');
             } catch(e) {
                 console.error('Erro geral:', e);
-                alert('❌ Erro: ' + e.message);
+                showToast('Erro: ' + e.message, 'error');
             }
         }
+
+        // Função para atualizar a lista de participantes
+        async function atualizarParticipantes() {
+            if (!currentAgendamentoId) {
+                showToast('ID do agendamento não encontrado', 'error');
+                return;
+            }
+            showToast('Atualizando lista...', 'info');
+            await verParticipantes(currentAgendamentoId);
+            showToast('Lista atualizada!', 'success');
+        }
+
+        // ========== ADICIONAR PARTICIPANTE (modal) ==========
+        let currentMaxJogadores = 10;
+        let pendingAddAgendamentoId = null;
 
         async function adicionarParticipante(agendamentoId, maxJogadores) {
             // Verificar quantos já estão inscritos
@@ -712,40 +1121,109 @@
             
             const numInscritos = inscritos ? inscritos.length : 0;
             if (numInscritos >= maxJogadores) {
-                alert("⚠️ Vagas esgotadas! Já tem " + maxJogadores + " jogadores inscritos.");
+                showToast('Vagas esgotadas! Já tem ' + maxJogadores + ' jogadores inscritos.', 'error');
                 return;
             }
 
-            const nome = prompt("Digite o nome do jogador:");
-            if (!nome || nome.trim() === '') return;
+            // Salvar dados e abrir modal
+            pendingAddAgendamentoId = agendamentoId;
+            currentMaxJogadores = maxJogadores;
+            document.getElementById('addNome').value = '';
+            document.getElementById('addTelefone').value = '';
+            document.getElementById('addEmail').value = '';
+            document.getElementById('addPago').checked = false;
+            document.getElementById('addParticipantModal').classList.add('active');
+            setTimeout(() => document.getElementById('addNome').focus(), 200);
+        }
 
-            const telefone = prompt("Digite o telefone (WhatsApp):");
-            if (!telefone || telefone.trim() === '') return;
+        async function confirmarAdicionarParticipante() {
+            const nome = document.getElementById('addNome').value.trim();
+            const telefone = document.getElementById('addTelefone').value.trim();
+            const email = document.getElementById('addEmail').value.trim();
+            const pago = document.getElementById('addPago').checked;
 
-            const email = prompt("Digite o e-mail (opcional - deixe em branco se não tiver):");
-
-            const statusPago = confirm("Já pagou?\n\nClique OK para SIM ou Cancelar para NÃO");
-            const status = statusPago ? 'pago' : 'pendente';
+            if (!nome) { showToast('Digite o nome do jogador!', 'error'); document.getElementById('addNome').focus(); return; }
+            if (!telefone) { showToast('Digite o telefone!', 'error'); document.getElementById('addTelefone').focus(); return; }
 
             try {
                 const { error } = await supabaseClient
                     .from('participantes_jogo')
                     .insert({
-                        agendamento_id: agendamentoId,
-                        nome_jogador: nome.trim(),
-                        telefone: telefone.trim(),
-                        email: email && email.trim() !== '' ? email.trim() : null,
-                        status_pagamento: status,
-                        data_pagamento: statusPago ? new Date().toISOString() : null
+                        agendamento_id: pendingAddAgendamentoId,
+                        nome_jogador: nome,
+                        telefone: telefone,
+                        email: email || null,
+                        status_pagamento: pago ? 'pago' : 'pendente',
+                        data_pagamento: pago ? new Date().toISOString() : null
                     });
 
                 if (error) throw error;
 
-                alert("✅ Participante adicionado com sucesso!");
-                carregarMeusJogos(); // Atualizar lista
+                fecharModalCustom('addParticipantModal');
+                showToast(nome + ' adicionado com sucesso!', 'success');
+                carregarMeusJogos();
 
             } catch(e) {
-                alert("❌ Erro ao adicionar: " + e.message);
+                showToast('Erro ao adicionar: ' + e.message, 'error');
+            }
+        }
+
+        // ========== REMOVER PARTICIPANTE (modal confirmação) ==========
+        let pendingDeleteId = null;
+
+        function pedirRemoverParticipante(id, nome) {
+            pendingDeleteId = id;
+            document.getElementById('confirmDeleteMsg').innerHTML = `Tem certeza que deseja remover <strong style="color:white;">${nome}</strong> da lista?`;
+            document.getElementById('confirmDeleteModal').classList.add('active');
+            document.getElementById('btnConfirmDelete').onclick = () => executarRemoverParticipante(nome);
+        }
+
+        async function executarRemoverParticipante(nome) {
+            if (!pendingDeleteId) return;
+            const idParaDeletar = pendingDeleteId;
+            try {
+                console.log('🗑️ Tentando deletar participante ID:', idParaDeletar);
+                
+                // Usar .select() para ver se realmente deletou algo
+                const { data: deleted, error } = await supabaseClient
+                    .from('participantes_jogo')
+                    .delete()
+                    .eq('id', idParaDeletar)
+                    .select();
+                
+                console.log('Resultado delete:', { deleted, error });
+
+                if (error) {
+                    console.error('Erro Supabase delete:', error);
+                    // Se for erro de RLS, tentar mensagem amigável
+                    if (error.message.includes('policy') || error.code === '42501') {
+                        throw new Error('Sem permissão para deletar. Rode o SQL de permissões no Supabase.');
+                    }
+                    throw error;
+                }
+
+                // Verificar se realmente deletou (RLS pode bloquear silenciosamente)
+                if (!deleted || deleted.length === 0) {
+                    console.warn('⚠️ Delete retornou vazio - RLS pode estar bloqueando');
+                    showToast('Não foi possível remover. Verifique permissões no Supabase (RLS).', 'error');
+                    fecharModalCustom('confirmDeleteModal');
+                    return;
+                }
+
+                fecharModalCustom('confirmDeleteModal');
+                showToast(nome + ' removido da lista!', 'success');
+
+                // Atualizar a lista de participantes que está aberta
+                if (currentAgendamentoId) {
+                    await verParticipantes(currentAgendamentoId);
+                }
+                carregarMeusJogos();
+            } catch(e) {
+                console.error('Erro ao remover participante:', e);
+                showToast('Erro ao remover: ' + e.message, 'error');
+                fecharModalCustom('confirmDeleteModal');
+            } finally {
+                pendingDeleteId = null;
             }
         }
 
@@ -756,7 +1234,7 @@
             }
         }
 
-        function setQuadra(n, el) { state.quadra = n; $('.q-tab').removeClass('active'); $(el).addClass('active'); carregarAgenda(); }
+        function setQuadra(n, el) { state.quadra = n; state.precoBase = PRECOS[n] || 75; $('.q-tab').removeClass('active'); $(el).addClass('active'); carregarAgenda(); }
         function mudarDia(d) { state.data.setDate(state.data.getDate() + d); carregarAgenda(); }
         function fecharModal() { $('.modal-overlay').removeClass('active'); }
     </script>

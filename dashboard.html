@@ -17,6 +17,15 @@
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
+        /* TOAST NOTIFICATION */
+        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 99999; display: flex; flex-direction: column; gap: 10px; }
+        .toast { padding: 14px 20px; border-radius: 12px; color: white; font-size: 13px; font-weight: 700; box-shadow: 0 10px 40px rgba(0,0,0,0.5); animation: toastIn 0.3s ease, toastOut 0.3s ease forwards; animation-delay: 0s, 3s; max-width: 350px; backdrop-filter: blur(10px); }
+        .toast-success { background: rgba(57,255,20,0.2); border: 1px solid #39FF14; }
+        .toast-error { background: rgba(255,0,64,0.2); border: 1px solid #FF0040; }
+        .toast-info { background: rgba(255,69,0,0.2); border: 1px solid #FF4500; }
+        @keyframes toastIn { from { opacity: 0; transform: translateX(100px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes toastOut { from { opacity: 1; } to { opacity: 0; transform: translateY(-20px); } }
+
         /* DESIGN SYSTEM DARK/NEON */
         :root { --arena: #FF4500; --bg: #050505; --card: #111; --success: #39FF14; --danger: #FF0040; }
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -165,12 +174,26 @@
                 </div>
                 <div class="text-center mt-3"><p class="text-xs text-gray-400">Valor por pessoa:</p><p class="text-2xl font-bold text-[#39FF14]" id="valorPorPessoa">R$ 15,00</p></div>
             </div>
-            <div id="areaIndividual" class="text-center py-4 mb-4"><p class="text-xs text-gray-400 uppercase">Total a Pagar</p><p class="text-4xl font-black italic text-white" id="valorTotal">R$ 150,00</p></div>
+            <div id="areaIndividual" class="text-center py-4 mb-4"><p class="text-xs text-gray-400 uppercase">Total a Pagar</p><p class="text-4xl font-black italic text-white" id="valorTotal">R$ 75,00</p></div>
             <button onclick="finalizarAgendamento()" class="w-full bg-[#FF4500] text-black font-black py-4 rounded-xl uppercase text-xs tracking-widest hover:scale-105 transition-all shadow-[0_0_20px_rgba(255,69,0,0.4)]">CONFIRMAR AGENDAMENTO</button>
         </div>
     </div>
 
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
     <script>
+        // TOAST NOTIFICATION SYSTEM
+        function showToast(msg, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+            toast.className = 'toast toast-' + type;
+            toast.textContent = icon + ' ' + msg;
+            container.appendChild(toast);
+            setTimeout(() => { if (toast.parentNode) toast.remove(); }, 3500);
+        }
+
         // --- CHAVES REAIS DO ANDERSON ---
         const SUPABASE_URL = 'https://ibchbcxtzngihxjschgl.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImliY2hiY3h0em5naWh4anNjaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk3MTYyNzYsImV4cCI6MjA4NTI5MjI3Nn0.ybBzyBWFQIvw6EV3F_xQwvXHJBX7wTsm05xEgRqsu34';
@@ -185,30 +208,39 @@
             inicioMinutos: 0,
             fimMinutos: 0,
             duracao: 1,
-            precoBase: 150,
+            precoBase: 75,
             modoPagamento: 'individual',
             jogadores: 10,
             busySlots: []
         };
 
+        // TABELA DE PREÇOS POR QUADRA (valor por hora)
+        const PRECOS = {
+            'Quadra 1': 75,
+            'Quadra 2': 85,
+            'Quadra 3': 85,
+            'Campo Oficial': 190,
+            'Mini Campo': 75
+        };
+
         // INICIALIZAÇÃO
         window.onload = function() {
             console.log("🚀 Dashboard carregado!");
-            alert("DEBUG: Dashboard iniciando...");
+            console.log('Dashboard iniciando...');
             try {
                 if(SUPABASE_URL.startsWith('http')) {
                     console.log("✅ URL Supabase válida");
                     supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
                     console.log("✅ Cliente Supabase criado");
-                    alert("DEBUG: Supabase conectado, verificando login...");
+                    console.log('Supabase conectado, verificando login...');
                     verificarLogin();
                 } else {
                     console.error("❌ URL Supabase inválida");
-                    alert("ERRO: URL Supabase inválida");
+                    console.error('URL Supabase inválida');
                 }
             } catch(e) { 
                 console.error("❌ Erro init:", e);
-                alert("ERRO INIT: " + e.message);
+                console.error('Erro init:', e.message);
             }
         };
 
@@ -219,7 +251,6 @@
             
             if (!session) {
                 console.warn("⚠️ Sem sessão ativa - redirecionando...");
-                alert("🔒 Acesso restrito. Faça login.");
                 window.location.href = 'index.html'; 
             } else {
                 currentUser = session.user;
@@ -383,9 +414,9 @@
                 valor_total: total
             });
 
-            if (error) { alert(error.message); btn.innerText = "TENTAR NOVAMENTE"; btn.disabled = false; }
+            if (error) { showToast(error.message, 'error'); btn.innerText = "TENTAR NOVAMENTE"; btn.disabled = false; }
             else {
-                alert("✅ Jogo Confirmado!");
+                showToast('Jogo Confirmado!', 'success');
                 fecharModal();
                 carregarAgenda(); carregarMeusJogos();
                 btn.innerText = "CONFIRMAR E GERAR LINK"; btn.disabled = false;
@@ -412,7 +443,7 @@
             }
         }
 
-        function setQuadra(n, el) { state.quadra = n; $('.q-tab').removeClass('active'); $(el).addClass('active'); carregarAgenda(); }
+        function setQuadra(n, el) { state.quadra = n; state.precoBase = PRECOS[n] || 75; $('.q-tab').removeClass('active'); $(el).addClass('active'); carregarAgenda(); }
         function mudarDia(d) { state.data.setDate(state.data.getDate() + d); carregarAgenda(); }
         function fecharModal() { $('.modal-overlay').removeClass('active'); }
     </script>

@@ -87,15 +87,90 @@
             <div class="days-wrapper" id="daysContainer"></div>
             <div class="h-[1px] w-full bg-white/10 mb-6"></div>
 
+            <!-- Legenda de Cores -->
+            <div style="display: flex; gap: 15px; margin-bottom: 15px; font-size: 10px; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 5px;">
+                    <div style="width: 12px; height: 12px; background: rgba(57, 255, 20, 0.3); border: 1px solid #39FF14; border-radius: 3px;"></div>
+                    <span style="color: #888;">Disponível</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 5px;">
+                    <div style="width: 12px; height: 12px; background: rgba(255, 200, 0, 0.3); border: 1px solid #FFC800; border-radius: 3px;"></div>
+                    <span style="color: #888;">Com Interesse</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 5px;">
+                    <div style="width: 12px; height: 12px; background: rgba(255, 0, 0, 0.3); border: 1px solid #ff5555; border-radius: 3px;"></div>
+                    <span style="color: #888;">Reservado</span>
+                </div>
+            </div>
+
             <h3 class="text-xs font-black uppercase text-gray-400 mb-3 tracking-widest">Horários Livres (07h - 23h)</h3>
+            
             <div class="time-grid" id="timeContainer"></div>
 
             <!-- Botão Chamada para Ação -->
             <div id="actionArea" class="mt-8">
-                <button id="btnConfirmar" onclick="tentarAgendar()" class="w-full bg-[#333] hover:bg-[#FF4500] hover:text-black text-gray-400 font-black py-5 rounded-2xl uppercase text-xs tracking-[0.2em] transition-all">
-                    🔒 Faça Login para Agendar
+                <button id="btnConfirmar" class="w-full bg-[#333] hover:bg-[#FF4500] hover:text-black text-gray-400 font-black py-5 rounded-2xl uppercase text-xs tracking-[0.2em] transition-all">
+                    👆 Clique em um horário acima
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE REGRAS DE AGENDAMENTO -->
+    <div class="modal-overlay" id="regrasModal">
+        <div class="auth-card" style="max-width: 500px;">
+            <button onclick="fecharModal('regrasModal')" class="absolute top-6 right-6 text-white/50 hover:text-white text-2xl">×</button>
+            
+            <div style="text-align: center; margin-bottom: 25px;">
+                <div style="width: 80px; height: 80px; margin: 0 auto 20px; background: linear-gradient(135deg, rgba(255,200,0,0.3), rgba(255,200,0,0.1)); border: 2px solid #FFC800; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 40px;">
+                    ⚠️
+                </div>
+                <h2 class="font-impact text-2xl text-[#FFC800] uppercase">Importante!</h2>
+                <p style="color: #888; font-size: 13px; margin-top: 10px;">Leia atentamente antes de continuar</p>
+            </div>
+
+            <div id="regrasInfo" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 25px; margin-bottom: 25px;">
+                <h3 style="color: #FF4500; font-weight: 900; font-size: 14px; margin-bottom: 15px; text-transform: uppercase;">📍 Regras de Agendamento</h3>
+                
+                <div style="color: #ccc; font-size: 13px; line-height: 1.8; margin-bottom: 20px;">
+                    <p style="margin-bottom: 15px;">
+                        <strong style="color: white;">• Sistema de Interesse:</strong><br>
+                        Ao clicar em um horário, você registra seu <strong style="color: #FFC800;">INTERESSE</strong>. O horário ficará <strong style="color: #FFC800;">AMARELO</strong> e visível para outros usuários.
+                    </p>
+                    
+                    <p style="margin-bottom: 15px;">
+                        <strong style="color: white;">• Quem Pagar Primeiro Leva:</strong><br>
+                        Vários usuários podem demonstrar interesse no mesmo horário. <strong style="color: #39FF14;">Quem pagar 30% do valor primeiro garante a reserva!</strong>
+                    </p>
+                    
+                    <p style="margin-bottom: 15px;">
+                        <strong style="color: white;">• Pagamento Obrigatório:</strong><br>
+                        É necessário pagar <strong style="color: #FF4500;">30% do valor total</strong> para confirmar. Após o pagamento, o horário fica <strong style="color: #ff5555;">VERMELHO (bloqueado)</strong> só para você.
+                    </p>
+                    
+                    <p>
+                        <strong style="color: white;">• Pagamento Restante:</strong><br>
+                        Os 70% restantes devem ser pagos <strong>até antes do horário agendado</strong>.
+                    </p>
+                </div>
+                
+                <div style="background: rgba(255,69,0,0.1); border: 1px dashed #FF4500; border-radius: 12px; padding: 15px;">
+                    <p style="color: #FF4500; font-weight: 700; font-size: 12px; text-align: center;">
+                        🛑 NÃO PAGUE, NÃO RESERVA! Simples assim.
+                    </p>
+                </div>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; margin-bottom: 25px; cursor: pointer;" onclick="toggleCheckboxRegras()">
+                <input type="checkbox" id="checkboxRegras" style="width: 22px; height: 22px; cursor: pointer;" onchange="habilitarBotaoRegras()">
+                <label for="checkboxRegras" style="color: white; font-size: 13px; font-weight: 700; cursor: pointer; user-select: none;">
+                    ✅ Sim, eu compreendo e aceito as regras de agendamento
+                </label>
+            </div>
+
+            <button id="btnContinuarRegras" disabled onclick="confirmarRegrasEContinuar()" style="width: 100%; background: #333; color: #666; font-weight: 900; padding: 18px; border-radius: 15px; text-transform: uppercase; font-size: 12px; letter-spacing: 2px; border: none; cursor: not-allowed; transition: 0.3s;">
+                Continuar para Pagamento
+            </button>
         </div>
     </div>
 
@@ -110,6 +185,14 @@
                 <input type="email" id="loginEmail" placeholder="Email" class="input-dark">
                 <input type="password" id="loginPassword" placeholder="Senha" class="input-dark">
                 <button onclick="fazerLogin()" class="w-full bg-[#FF4500] text-black font-black py-4 rounded-xl mt-4 uppercase text-xs tracking-widest">Entrar</button>
+                
+                <div class="divider">ou</div>
+                
+                <button id="btn-google" class="google-btn">
+                    <img src="https://www.google.com/favicon.ico" alt="Google">
+                    Entrar com Google
+                </button>
+                
                 <p class="text-center mt-6 text-xs text-gray-500 cursor-pointer" onclick="toggleAuth('cadastro')">Criar conta</p>
             </div>
 
@@ -150,10 +233,13 @@
         </div>
     </footer>
 
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
     <!-- Scripts no final -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="script.js?v=20260207001"></script>
+    <script src="script.js?v=20260220FIX2"></script>
 
     <!-- Estilos Internos para Modais (Opcional se mover pro CSS) -->
     <style>
@@ -161,9 +247,42 @@
         .modal-overlay.active { display: flex; }
         .auth-card { width: 90%; max-width: 400px; background: #111; border-radius: 30px; padding: 40px; border: 1px solid rgba(255,69,0,0.2); position: relative; }
         .input-dark { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 12px; border-radius: 12px; margin: 10px 0; outline: none; font-size: 12px; }
+        .google-btn { width: 100%; background: white; color: #333; font-weight: 700; padding: 12px; border-radius: 12px; margin-top: 15px; display: flex; align-items: center; justify-content: center; gap: 10px; border: none; cursor: pointer; transition: 0.3s; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .google-btn:hover { background: #f5f5f5; transform: scale(1.02); }
+        .google-btn img { width: 20px; height: 20px; }
+        .divider { display: flex; align-items: center; gap: 10px; margin: 20px 0; color: #666; font-size: 11px; text-transform: uppercase; }
+        .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.1); }
         .msg-box { display: none; padding: 12px; margin-bottom: 15px; border-radius: 8px; font-size: 12px; font-weight: bold; text-align: center; }
+        
+        /* Botão ativo no modal de regras */
+        #btnContinuarRegras:not(:disabled) {
+            background: linear-gradient(135deg, #FF4500, #ff6600) !important;
+            color: black !important;
+            cursor: pointer !important;
+            box-shadow: 0 0 20px rgba(255,69,0,0.4);
+        }
+        #btnContinuarRegras:not(:disabled):hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 30px rgba(255,69,0,0.6);
+        }
+        
+        /* Animação pulse para avisos */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.9; transform: scale(1.02); }
+        }
         .msg-error { background: rgba(255,0,0,0.2); color: #ff5555; border: 1px solid #ff5555; }
         .msg-success { background: rgba(0,255,0,0.2); color: #55ff55; border: 1px solid #55ff55; }
+
+        /* TOAST NOTIFICATION */
+        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 99999; display: flex; flex-direction: column; gap: 10px; }
+        .toast { padding: 14px 20px; border-radius: 12px; color: white; font-size: 13px; font-weight: 700; box-shadow: 0 10px 40px rgba(0,0,0,0.5); animation: toastIn 0.3s ease, toastOut 0.3s ease forwards; animation-delay: 0s, 3s; max-width: 350px; backdrop-filter: blur(10px); }
+        .toast-success { background: rgba(57,255,20,0.2); border: 1px solid #39FF14; }
+        .toast-error { background: rgba(255,0,64,0.2); border: 1px solid #FF0040; }
+        .toast-info { background: rgba(255,69,0,0.2); border: 1px solid #FF4500; }
+        .toast-warn { background: rgba(255,200,0,0.2); border: 1px solid #FFC800; }
+        @keyframes toastIn { from { opacity: 0; transform: translateX(100px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes toastOut { from { opacity: 1; } to { opacity: 0; transform: translateY(-20px); } }
         .hidden { display: none !important; }
         .footer { background: var(--card-bg); border-top: 1px solid rgba(255,255,255,0.05); padding: 40px 20px 20px; margin-top: 60px; }
         .footer-container { max-width: 500px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 30px; margin-bottom: 30px; }

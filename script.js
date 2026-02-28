@@ -8,7 +8,24 @@ let selectedQuadra = 'Quadra 1';
 let selectedDate = new Date();
 let selectedTime = null;
 let duracaoHoras = 1;
-let busySlots = [];
+let busySlots = []; // Array de objetos {hora, status}
+
+// ===== TOAST NOTIFICATION =====
+function showToast(msg, type = 'info') {
+    let container = document.getElementById('toastContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toastContainer';
+        container.className = 'toast-container';
+        document.body.appendChild(container);
+    }
+    const toast = document.createElement('div');
+    const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warn' ? '⚠️' : 'ℹ️';
+    toast.className = 'toast toast-' + type;
+    toast.textContent = icon + ' ' + msg;
+    container.appendChild(toast);
+    setTimeout(() => { if (toast.parentNode) toast.remove(); }, 3500);
+}
 
 const weekDays = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
 
@@ -30,6 +47,14 @@ function abrirCalendario(titulo) {
 
 function fecharModal(id) { 
     $(`#${id}`).removeClass('active');
+    
+    // Limpar aviso extra do modal de regras ao fechar
+    if (id === 'regrasModal') {
+        setTimeout(() => {
+            $('#regrasInfo > div:first-child').remove();
+        }, 300);
+    }
+    
     setTimeout(() => {
         if (!$(`#${id}`).hasClass('active')) {
             // Apenas para garantir limpeza
@@ -95,10 +120,24 @@ function renderHorarios() {
         let h = Math.floor(7 + i/2);
         let m = (i % 2) === 0 ? '00' : '30';
         let time = `${h.toString().padStart(2,'0')}:${m}`;
-        let isBusy = busySlots.includes(time);
-        let statusClass = isBusy ? 'busy' : 'free';
         
-        html += `<div class="time-slot ${statusClass}" onclick="tentarAgendar('${time}')">${time}</div>`;
+        // Verificar status do horário
+        let slotInfo = busySlots.find(slot => slot.hora === time);
+        let statusClass = 'disponivel'; // padrão: disponível (verde claro)
+        let clickable = true;
+        
+        if (slotInfo) {
+            if (slotInfo.status === 'confirmado' || slotInfo.status === 'concluido') {
+                statusClass = 'bloqueado'; // vermelho - já reservado
+                clickable = false;
+            } else if (slotInfo.status === 'interesse') {
+                statusClass = 'interesse'; // amarelo - tem interesse(s)
+            }
+        }
+        
+        // Só adiciona onclick se for clicável
+        const onclickAttr = clickable ? `onclick="tentarAgendar('${time}')"` : '';
+        html += `<div class="time-slot ${statusClass}" ${onclickAttr}>${time}</div>`;
     }
     $('#timeContainer').html(html);
 }
@@ -112,35 +151,9 @@ function selecionarDia(el, diasExtra) {
     renderHorarios();
 }
 
-function selecionarHora(el, time) {
-    // Não permitir selecionar horários ocupados
-    if ($(el).hasClass('busy')) {
-        alert('⚠️ Este horário já foi reservado!');
-        return;
-    }
-    
-    if (!currentUser) {
-        alert('📋 Para agendar este horário, faça login ou cadastre-se!');
-        $('#authModal').addClass('active');
-        toggleAuth('login');
-        return;
-    }
-
-    $('.time-slot').removeClass('selected'); 
-    $(el).addClass('selected');
-    selectedTime = time;
-    
-    // Atualizar botão com evento de clique
-    $('#btnConfirmar')
-        .css('background', '#FF4500')
-        .css('color', 'black')
-        .text(`CONFIRMAR (${time})`)
-        .off('click')
-        .on('click', function(e) {
-            e.preventDefault();
-            handleBtnConfirmar();
-        });
-}
+// FUNÇÕES ANTIGAS - NÃO USADAS NO NOVO FLUXO
+// function selecionarHora(el, time) {...}
+// function handleBtnConfirmar() {...}
 
 function mudarDuracao(h, el) {
     duracaoHoras = h;
@@ -148,29 +161,19 @@ function mudarDuracao(h, el) {
     $(el).addClass('active');
 }
 
-function handleBtnConfirmar() {
-    console.log('🔍 Botão clicado!');
-    console.log('currentUser:', currentUser);
+function tentarAgendar(time) {
+    console.log('🔔 tentarAgendar chamado com:', time);
+    
+    // Verificar se o horário está bloqueado
+    const slotInfo = busySlots.find(slot => slot.hora === time);
+    
+    if (slotInfo && (slotInfo.status === 'confirmado' || slotInfo.status === 'concluido')) {
+        showToast('Este horário já está reservado!', 'error');
+        return;
+    }
     
     if (!currentUser) {
-        console.log('❌ Não logado - Fechando calendário e abrindo login');
-        fecharModal('calendarModal');
-        
-        setTimeout(() => {
-            $('#authModal').addClass('active');
-            $('#loginView').removeClass('hidden').show();
-            $('#cadastroView').addClass('hidden').hide();
-            $('#loginEmail').focus();
-            console.log('✅ Login aberto com transição suave');
-        }, 500);
-    } else {
-        console.log('✅ Logado - Salvando reserva');
-        salvarReserva();
-    }
-}
-
-function tentarAgendar(time) {
-    if (!currentUser) {
+        console.log('❌ Usuário não logado');
         if(confirm("🔒 Para agendar, faça login.")) {
             fecharModal('calendarModal');
             setTimeout(() => {
@@ -178,11 +181,77 @@ function tentarAgendar(time) {
                 toggleAuth('login');
             }, 300);
         }
+        return;
+    }
+    
+    // Usuário logado - selecionar o horário e abrir modal de regras
+    console.log('✅ Usuário logado, abrindo modal de regras');
+    selectedTime = time;
+    
+    // Atualizar info do modal com os dados da reserva
+    const temInteresse = slotInfo && slotInfo.status === 'interesse';
+    
+    // Destacar aviso se já tem interesse de outros
+    if (temInteresse) {
+        $('#regrasInfo').prepend(`
+            <div style="background: rgba(255,200,0,0.2); border: 2px solid #FFC800; border-radius: 15px; padding: 15px; margin-bottom: 20px; animation: pulse 2s infinite;">
+                <p style="color: #FFC800; font-weight: 900; font-size: 13px; text-align: center;">
+                    ⚡ ATENÇÃO: Outras pessoas já demonstraram interesse neste horário!<br>
+                    <span style="color: white; font-size: 12px;">Quem pagar primeiro garante a reserva!</span>
+                </p>
+            </div>
+        `);
+    }
+    
+    // Resetar checkbox
+    $('#checkboxRegras').prop('checked', false);
+    $('#btnContinuarRegras').prop('disabled', true);
+    
+    // Fechar calendário e abrir modal de regras
+    fecharModal('calendarModal');
+    setTimeout(() => {
+        console.log('📦 Abrindo modal regrasModal');
+        $('#regrasModal').addClass('active');
+    }, 300);
+}
+
+// Garantir que está no escopo global
+window.tentarAgendar = tentarAgendar;
+
+// Funções do Modal de Regras
+function toggleCheckboxRegras() {
+    const checkbox = document.getElementById('checkboxRegras');
+    checkbox.checked = !checkbox.checked;
+    habilitarBotaoRegras();
+}
+
+function habilitarBotaoRegras() {
+    const checkbox = document.getElementById('checkboxRegras');
+    const botao = document.getElementById('btnContinuarRegras');
+    
+    if (checkbox.checked) {
+        botao.disabled = false;
+        botao.style.cursor = 'pointer';
     } else {
-        const timestamp = new Date().getTime();
-        window.location.href = 'admin.html?nocache=' + timestamp + '&v=' + Math.random();
+        botao.disabled = true;
+        botao.style.cursor = 'not-allowed';
     }
 }
+
+function confirmarRegrasEContinuar() {
+    // Fechar modal de regras
+    fecharModal('regrasModal');
+    
+    // Salvar interesse e redirecionar para pagamento
+    setTimeout(() => {
+        salvarReserva();
+    }, 300);
+}
+
+// Garantir que funções estão no escopo global
+window.toggleCheckboxRegras = toggleCheckboxRegras;
+window.habilitarBotaoRegras = habilitarBotaoRegras;
+window.confirmarRegrasEContinuar = confirmarRegrasEContinuar;
 
 // ===== FUNÇÕES SUPABASE =====
 async function inicializarSupabase() {
@@ -193,6 +262,34 @@ async function inicializarSupabase() {
         }
         supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         console.log("✅ Supabase OK");
+        
+        // Listener para mudanças de autenticação (captura retorno do Google OAuth)
+        supabaseClient.auth.onAuthStateChange((event, session) => {
+            console.log('🔐 Auth event:', event);
+            
+            if (event === 'SIGNED_IN' && session) {
+                console.log('✅ Login detectado:', session.user.email);
+                currentUser = session.user;
+                
+                // Salvar dados localmente
+                localStorage.setItem('userEmail', currentUser.email);
+                localStorage.setItem('userId', currentUser.id);
+                localStorage.setItem('loginTime', Date.now());
+                
+                // Redirecionar para admin
+                showToast('Login com Google realizado!', 'success');
+                setTimeout(() => {
+                    window.location.href = 'admin.html?v=' + Date.now();
+                }, 1000);
+            }
+            
+            if (event === 'SIGNED_OUT') {
+                console.log('🚪 Logout detectado');
+                currentUser = null;
+                localStorage.clear();
+            }
+        });
+        
         await checkSession();
     } catch(e) { 
         console.error('❌ Erro:', e);
@@ -247,14 +344,14 @@ async function fazerLogin() {
     const password = $('#loginPassword').val().trim();
     
     if (!email || !password) {
-        alert('⚠️ Preencha email e senha!');
+        showToast('Preencha email e senha!', 'warn');
         return;
     }
     
     try {
         const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
         if (error) {
-            alert("❌ Erro: " + error.message);
+            showToast(error.message, 'error');
         } else {
             currentUser = data.user;
             
@@ -265,7 +362,7 @@ async function fazerLogin() {
             
             fecharModal('authModal');
             checkSession();
-            alert("✅ Login realizado! Redirecionando...");
+            showToast('Login realizado! Redirecionando...', 'success');
             
             // Redirecionar para dashboard com cache busting
             setTimeout(() => {
@@ -273,7 +370,27 @@ async function fazerLogin() {
             }, 1000);
         }
     } catch(e) {
-        alert('❌ Erro: ' + e.message);
+        showToast(e.message, 'error');
+    }
+}
+
+// Login com Google
+async function fazerLoginGoogle() {
+    try {
+        const { data, error } = await supabaseClient.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: window.location.origin + '/admin.html'
+            }
+        });
+        
+        if (error) {
+            console.error('Erro ao logar com Google:', error.message);
+            showToast('Erro ao conectar com o Google. Tente novamente.', 'error');
+        }
+        // O OAuth vai redirecionar automaticamente
+    } catch(e) {
+        showToast(e.message, 'error');
     }
 }
 
@@ -284,27 +401,27 @@ async function criarConta() {
     const whats = $('#regWhats').val().trim();
     
     if (!email || !password || !nome || !whats) {
-        alert('⚠️ Preencha todos os campos!');
+        showToast('Preencha todos os campos!', 'warn');
         return;
     }
 
     if (!email.includes('@') || !email.includes('.')) {
-        alert('⚠️ Email inválido! Use um formato válido (ex: usuario@email.com)');
+        showToast('Email inválido! Use um formato válido (ex: usuario@email.com)', 'warn');
         return;
     }
 
     if (password.length < 6) {
-        alert('⚠️ Senha deve ter no mínimo 6 caracteres!');
+        showToast('Senha deve ter no mínimo 6 caracteres!', 'warn');
         return;
     }
 
     if (nome.length < 3) {
-        alert('⚠️ Nome deve ter no mínimo 3 caracteres!');
+        showToast('Nome deve ter no mínimo 3 caracteres!', 'warn');
         return;
     }
 
     if (whats.length < 10) {
-        alert('⚠️ WhatsApp inválido! Formato: (XX) 9XXXX-XXXX');
+        showToast('WhatsApp inválido! Formato: (XX) 9XXXX-XXXX', 'warn');
         return;
     }
     
@@ -322,13 +439,13 @@ async function criarConta() {
         
         if (error) {
             if (error.message.includes('rate limit')) {
-                alert("⏳ Muitas tentativas! Aguarde 5 minutos antes de tentar novamente.");
+                showToast('Muitas tentativas! Aguarde 5 minutos.', 'warn');
             } else if (error.message.includes('already exists')) {
-                alert("❌ Este email já está cadastrado! Faça login ou use outro email.");
+                showToast('Este email já está cadastrado! Faça login.', 'warn');
             } else if (error.message.includes('email')) {
-                alert("❌ Erro no email: " + error.message);
+                showToast('Erro no email: ' + error.message, 'error');
             } else {
-                alert("❌ Erro: " + error.message);
+                showToast(error.message, 'error');
             }
         } else {
             // Salvar dados localmente para dashboard
@@ -337,7 +454,7 @@ async function criarConta() {
             
             currentUser = data.user;
             localStorage.setItem('loginTime', Date.now());
-            alert("✅ Conta criada com sucesso! Redirecionando para o painel...");
+            showToast('Conta criada com sucesso! Redirecionando...', 'success');
             
             // Redirecionar para dashboard após 1 segundo com cache busting
             setTimeout(() => {
@@ -345,7 +462,7 @@ async function criarConta() {
             }, 1000);
         }
     } catch(e) {
-        alert('❌ Erro: ' + e.message);
+        showToast(e.message, 'error');
     }
 }
 
@@ -353,13 +470,25 @@ async function buscarAgendamentos(dataISO) {
     if(!supabaseClient) return;
     try {
         const { data, error } = await supabaseClient
-            .from('agendamentos')
-            .select('hora_inicio')
-            .eq('data_jogo', dataISO)
-            .eq('sub_recurso', selectedQuadra);
+            .from('reservas')
+            .select('hora_inicio, status')
+            .eq('data', dataISO)
+            .eq('quadra', selectedQuadra);
+
+        if(error) {
+            console.error('Erro ao buscar reservas:', error);
+            busySlots = [];
+            renderHorarios();
+            return;
+        }
 
         if(data) {
-            busySlots = data.map(d => d.hora_inicio);
+            // Mapear para formato {hora, status}
+            busySlots = data.map(d => ({
+                hora: d.hora_inicio,
+                status: d.status
+            }));
+            console.log('📅 Reservas encontradas:', busySlots);
             renderHorarios();
         } else {
             busySlots = [];
@@ -367,6 +496,8 @@ async function buscarAgendamentos(dataISO) {
         }
     } catch(e) {
         console.error('Erro:', e);
+        busySlots = [];
+        renderHorarios();
     }
 }
 
@@ -378,40 +509,59 @@ async function salvarReserva() {
     }
     
     if (!selectedTime) {
-        alert('Selecione um horário!');
+        showToast('Selecione um horário!', 'warn');
         return;
     }
 
-    const btn = document.getElementById('btnConfirmar');
-    btn.innerText = "Salvando...";
-    btn.disabled = true;
-    
     const dataFormatada = selectedDate.toISOString().split('T')[0];
+    
+    // Calcular hora_fim (1 hora depois)
+    const [hora, minuto] = selectedTime.split(':');
+    const horaFim = `${(parseInt(hora) + duracaoHoras).toString().padStart(2, '0')}:${minuto}`;
 
     try {
-        const { error } = await supabaseClient.from('agendamentos').insert({
+        // Inserir como "interesse" até que o pagamento seja confirmado
+        const { data, error } = await supabaseClient.from('reservas').insert({
             user_id: currentUser.id,
-            tipo_recurso: 'Arena',
-            sub_recurso: selectedQuadra,
-            data_jogo: dataFormatada,
+            quadra: selectedQuadra,
+            data: dataFormatada,
             hora_inicio: selectedTime,
-            duracao: duracaoHoras,
-            status: 'confirmado'
-        });
+            hora_fim: horaFim,
+            status: 'interesse' // Será mudado para 'confirmado' após pagamento de 30%
+        }).select();
 
         if (error) {
-            alert("❌ Erro: " + error.message);
+            console.error('Erro ao salvar:', error);
+            showToast('Erro ao salvar interesse: ' + error.message, 'error');
         } else {
-            alert("✅ Agendamento confirmado!");
+            console.log('✅ Interesse registrado:', data);
+            
+            // Salvar ID da reserva para usar no pagamento
+            const reservaId = data[0].id;
+            localStorage.setItem('reserva_pendente_id', reservaId);
+            localStorage.setItem('reserva_pendente_quadra', selectedQuadra);
+            localStorage.setItem('reserva_pendente_data', dataFormatada);
+            localStorage.setItem('reserva_pendente_hora', selectedTime);
+            
+            // Redirecionar para página de pagamento
+            console.log('🔄 Redirecionando para pagamento...');
+            console.log('📋 ID da reserva:', reservaId);
+            
+            showToast('Interesse registrado! Redirecionando para pagamento...', 'success');
+            
+            // Fechar modais antes de redirecionar
+            fecharModal('regrasModal');
             fecharModal('calendarModal');
-            buscarAgendamentos(dataFormatada);
+            
+            setTimeout(() => {
+                const url = `pagamento.html?reserva=${reservaId}`;
+                console.log('🚀 Redirecionando para:', url);
+                window.location.href = url;
+            }, 1500);
         }
-        btn.innerText = "CONFIRMAR";
-        btn.disabled = true;
     } catch(e) {
-        alert('❌ Erro: ' + e.message);
-        btn.innerText = "Tentar Novamente";
-        btn.disabled = false;
+        console.error('❌ Erro:', e);
+        showToast('Erro ao salvar: ' + e.message, 'error');
     }
 }
 
@@ -420,9 +570,9 @@ document.addEventListener('DOMContentLoaded', function() {
     renderDias();
     inicializarSupabase();
     
-    // Adicionar evento ao botão na inicialização
-    $('#btnConfirmar').on('click', function(e) {
-        e.preventDefault();
-        handleBtnConfirmar();
-    });
+    // Botão de login com Google
+    const btnGoogle = document.getElementById('btn-google');
+    if (btnGoogle) {
+        btnGoogle.addEventListener('click', fazerLoginGoogle);
+    }
 });

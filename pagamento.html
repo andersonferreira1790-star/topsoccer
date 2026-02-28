@@ -13,6 +13,15 @@
 
     <style>
         :root { --arena: #FF4500; --bg: #050505; --card: #111; --success: #39FF14; }
+
+        /* TOAST NOTIFICATION */
+        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 99999; display: flex; flex-direction: column; gap: 10px; }
+        .toast { padding: 14px 20px; border-radius: 12px; color: white; font-size: 13px; font-weight: 700; box-shadow: 0 10px 40px rgba(0,0,0,0.5); animation: toastIn 0.3s ease, toastOut 0.3s ease forwards; animation-delay: 0s, 3s; max-width: 350px; backdrop-filter: blur(10px); }
+        .toast-success { background: rgba(57,255,20,0.2); border: 1px solid #39FF14; }
+        .toast-error { background: rgba(255,0,64,0.2); border: 1px solid #FF0040; }
+        .toast-info { background: rgba(255,69,0,0.2); border: 1px solid #FF4500; }
+        @keyframes toastIn { from { opacity: 0; transform: translateX(100px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes toastOut { from { opacity: 1; } to { opacity: 0; transform: translateY(-20px); } }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: linear-gradient(135deg, #000 0%, #1a1a1a 100%); color: white; font-family: 'Inter', sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
         .font-impact { font-family: 'Archivo Black', sans-serif; text-transform: uppercase; font-style: italic; }
@@ -180,66 +189,267 @@
         </div>
     </div>
 
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
     <script>
+        // TOAST NOTIFICATION SYSTEM
+        function showToast(msg, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+            toast.className = 'toast toast-' + type;
+            toast.textContent = icon + ' ' + msg;
+            container.appendChild(toast);
+            setTimeout(() => { if (toast.parentNode) toast.remove(); }, 3500);
+        }
+
         const SUPABASE_URL = 'https://ibchbcxtzngihxjschgl.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImliY2hiY3h0em5naWh4anNjaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk3MTYyNzYsImV4cCI6MjA4NTI5MjI3Nn0.ybBzyBWFQIvw6EV3F_xQwvXHJBX7wTsm05xEgRqsu34';
-        const STRIPE_KEY = 'pk_test_51SyPBMHG2b26DYmIcelPJ2Qm2D7TgIeyrKrWW8J8c8WVlcx6BQCFkIgXMqCEi8K1L42GRaP38Cs6edteLMVFaPkV00HdMzx5ru';
+        const STRIPE_PUBLISHABLE_KEY = 'pk_test_51T4ndfAMRrzQseDW49v6yerBz3XTEMHDPHH5gDOtcUmroqD9HHaJX39P6Olom5nV5SB9NSBpWO0YAXix80OrYZjy00drvOmETA';
 
         let supabaseClient = null;
         let stripe = null;
         let cardElement = null;
-        let inscricaoId = null;
-        let inscricaoData = null;
-        let valorCentavos = 0;
+        let agendamentoId = null; // Pode ser reserva ou agendamento
+        let agendamentoData = null;
+        let tipoAgendamento = null; // 'reserva', 'agendamento' ou 'inscricao'
+        let inscricaoId = null; // ID do participante (quando for racha)
+        let valorTotal = 75; // Valor padrão (Quadra 1)
+        let valorPagar = 0; // Valor a pagar (100% do valor)
         let paymentMethod = 'card'; // 'card' ou 'pix'
         let pixCheckInterval = null;
 
         window.onload = async function() {
-            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-            stripe = Stripe(STRIPE_KEY);
+            console.log('🔄 Página de pagamento carregando...');
+            console.log('📍 URL completa:', window.location.href);
+            
+            try {
+                // Verificar bibliotecas
+                if (!window.supabase) {
+                    console.error('❌ Supabase não carregado');
+                    showToast('Supabase não carregado. Recarregue a página.', 'error');
+                    return;
+                }
+                
+                if (!window.Stripe) {
+                    console.error('❌ Stripe não carregado');
+                    showToast('Stripe não carregado. Recarregue a página.', 'error');
+                    return;
+                }
+                
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                stripe = Stripe(STRIPE_PUBLISHABLE_KEY);
+                console.log('✅ Supabase e Stripe inicializados');
 
-            // Pegar ID da inscrição
-            const urlParams = new URLSearchParams(window.location.search);
-            inscricaoId = urlParams.get('inscricao');
+                // Pegar ID da URL (pode ser 'reserva', 'agendamento' ou 'inscricao')
+                console.log('🔍 Analisando URL:', window.location.search);
+                const urlParams = new URLSearchParams(window.location.search);
+                const reservaParam = urlParams.get('reserva');
+                const agendamentoParam = urlParams.get('agendamento');
+                const inscricaoParam = urlParams.get('inscricao');
+                
+                console.log('📝 Parâmetros encontrados:', {
+                    reserva: reservaParam,
+                    agendamento: agendamentoParam,
+                    inscricao: inscricaoParam
+                });
+                
+                if (inscricaoParam) {
+                    // Jogador inscrito via link do racha
+                    inscricaoId = inscricaoParam;
+                    tipoAgendamento = 'inscricao';
+                    console.log('🎫 Modo: INSCRIÇÃO');
+                    console.log('🆔 ID:', inscricaoId);
+                } else if (agendamentoParam) {
+                    agendamentoId = agendamentoParam;
+                    tipoAgendamento = 'agendamento';
+                    console.log('📋 Modo: AGENDAMENTO');
+                    console.log('🆔 ID:', agendamentoId);
+                } else if (reservaParam) {
+                    agendamentoId = reservaParam;
+                    tipoAgendamento = 'reserva';
+                    console.log('📋 Modo: RESERVA');
+                    console.log('🆔 ID:', agendamentoId);
+                } else {
+                    console.error('❌ Nenhum ID encontrado na URL');
+                    window.location.href = 'admin.html';
+                    return;
+                }
 
-            if (!inscricaoId) {
-                alert('❌ ID de inscrição inválido!');
-                window.location.href = 'index.html';
-                return;
+                console.log('🔍 Tipo:', tipoAgendamento);
+                console.log('🔍 Buscando dados...');
+                await carregarDados();
+                
+            } catch(e) {
+                console.error('❌ Erro:', e);
+                window.location.href = 'admin.html';
             }
-
-            await carregarDados();
         };
 
         async function carregarDados() {
             try {
-                // Buscar dados da inscrição
-                const { data: inscricao, error: errInscricao } = await supabaseClient
-                    .from('participantes_jogo')
-                    .select('*, agendamento:agendamentos(*)')
-                    .eq('id', inscricaoId)
-                    .single();
+                console.log('═══════════════════════════════════════');
+                console.log('🔎 INICIANDO carregarDados()');
+                console.log('📝 Tipo:', tipoAgendamento);
+                console.log('🆔 agendamentoId:', agendamentoId);
+                console.log('🆔 inscricaoId:', inscricaoId);
+                console.log('═══════════════════════════════════════');
+                
+                let dados, erro;
+                
+                // Se for INSCRIÇÃO (jogador do racha)
+                if (tipoAgendamento === 'inscricao') {
+                    console.log('👤 Buscando dados de INSCRIÇÃO...');
+                    // Buscar dados do participante
+                    const { data: participante, error: errParticipante } = await supabaseClient
+                        .from('participantes_jogo')
+                        .select('*')
+                        .eq('id', inscricaoId)
+                        .single();
+                    
+                    if (errParticipante || !participante) {
+                        throw new Error('Inscrição não encontrada: ' + (errParticipante?.message || 'Dados inválidos'));
+                    }
+                    
+                    console.log('👤 Participante:', participante);
+                    
+                    // Buscar dados do agendamento relacionado
+                    const { data: agendamento, error: errAgendamento } = await supabaseClient
+                        .from('agendamentos')
+                        .select('*')
+                        .eq('id', participante.agendamento_id)
+                        .single();
+                    
+                    if (errAgendamento || !agendamento) {
+                        throw new Error('Agendamento não encontrado: ' + (errAgendamento?.message || 'Dados inválidos'));
+                    }
+                    
+                    agendamentoId = agendamento.id;
+                    agendamentoData = agendamento;
+                    agendamentoData.participante = participante; // Salvar dados do participante
+                    
+                    console.log('✅ Dados do agendamento:', agendamento);
+                    console.log('💰 Valor por pessoa:', agendamento.valor_por_pessoa);
+                    
+                    // Verificar se já pagou
+                    if (participante.status_pagamento === 'pago') {
+                        console.log('⚠️ Já pagou!');
+                        showToast('Você já efetuou o pagamento!', 'success');
+                        window.location.href = 'index.html';
+                        return;
+                    }
+                    
+                } else if (tipoAgendamento === 'agendamento') {
+                    console.log('📅 Buscando AGENDAMENTO na tabela agendamentos...');
+                    console.log('🔍 ID buscado:', agendamentoId);
+                    
+                    // Buscar na tabela agendamentos
+                    const { data, error } = await supabaseClient
+                        .from('agendamentos')
+                        .select('*')
+                        .eq('id', agendamentoId)
+                        .single();
+                    
+                    console.log('📥 Resposta Supabase:', { data, error });
+                    
+                    dados = data;
+                    erro = error;
+                    
+                    if (erro) {
+                        console.error('❌ Erro ao buscar:', erro);
+                        throw new Error('Agendamento não encontrado: ' + erro.message);
+                    }
+                    
+                    if (!dados) {
+                        console.error('❌ Nenhum dado retornado!');
+                        throw new Error('Agendamento não encontrado: Dados inválidos');
+                    }
+                    
+                    console.log('✅ Agendamento encontrado!', dados);
+                    agendamentoData = dados;
+                    
+                } else {
+                    // Buscar na tabela reservas
+                    const { data, error } = await supabaseClient
+                        .from('reservas')
+                        .select('*')
+                        .eq('id', agendamentoId)
+                        .single();
+                    dados = data;
+                    erro = error;
+                    
+                    if (erro || !dados) {
+                        throw new Error('Reserva não encontrada: ' + (erro?.message || 'Dados inválidos'));
+                    }
+                    
+                    agendamentoData = dados;
+                }
 
-                if (errInscricao || !inscricao) throw new Error('Inscrição não encontrada');
+                console.log('✅ Dados carregados:', agendamentoData);
+                console.log('📊 Status atual:', agendamentoData.status);
 
-                inscricaoData = inscricao;
-                const jogo = inscricao.agendamento;
-
-                // Verificar se já pagou
-                if (inscricao.status_pagamento === 'pago') {
+                // Verificar se já está confirmado (exceto para inscrição)
+                if (tipoAgendamento !== 'inscricao' && (agendamentoData.status === 'confirmado' || agendamentoData.status === 'concluido')) {
+                    console.log('⚠️ Já está pago! Status:', agendamentoData.status);
                     mostrarSucesso();
                     return;
                 }
+                
+                // Buscar dados do usuário
+                const { data: { user } } = await supabaseClient.auth.getUser();
+                let nomeUsuario = user?.email?.split('@')[0] || 'Jogador';
+
+                // Extrair dados conforme o tipo
+                let dataJogo, quadraNome, horaInicio, horaFim;
+                
+                if (tipoAgendamento === 'inscricao') {
+                    // Dados de um participante inscrito via link
+                    const participante = agendamentoData.participante;
+                    
+                    dataJogo = agendamentoData.data_jogo;
+                    quadraNome = agendamentoData.sub_recurso;
+                    horaInicio = agendamentoData.hora_inicio;
+                    horaFim = agendamentoData.hora_fim;
+                    valorTotal = parseFloat(agendamentoData.valor_total) || 75;
+                    valorPagar = parseFloat(agendamentoData.valor_por_pessoa); // Jogador paga sua parte
+                    nomeUsuario = participante.nome_jogador; // Nome do participante
+                    
+                    console.log('👤 Jogador inscrito:', nomeUsuario);
+                    
+                } else if (tipoAgendamento === 'agendamento') {
+                    // Dados da tabela agendamentos
+                    dataJogo = agendamentoData.data_jogo;
+                    quadraNome = agendamentoData.sub_recurso;
+                    horaInicio = agendamentoData.hora_inicio;
+                    horaFim = agendamentoData.hora_fim;
+                    valorTotal = parseFloat(agendamentoData.valor_total) || 75;
+                    
+                    // Paga valor total (individual) ou valor por pessoa (racha)
+                    if (agendamentoData.racha_ativo) {
+                        valorPagar = parseFloat(agendamentoData.valor_por_pessoa);
+                    } else {
+                        valorPagar = valorTotal;
+                    }
+                } else {
+                    // Dados da tabela reservas
+                    dataJogo = agendamentoData.data;
+                    quadraNome = agendamentoData.quadra;
+                    horaInicio = agendamentoData.hora_inicio;
+                    horaFim = agendamentoData.hora_fim;
+                    valorTotal = 75; // Valor padrão
+                    valorPagar = valorTotal;
+                }
+
+                console.log('💰 Valor total:', valorTotal);
+                console.log('💰 Valor a pagar:', valorPagar);
 
                 // Preencher dados na tela
-                $('#nomeJogador').text(inscricao.nome_jogador);
-                $('#dataJogo').text(formatarData(jogo.data_jogo));
-                $('#horarioJogo').text(jogo.hora_inicio);
-                $('#quadraJogo').text(jogo.sub_recurso);
-                
-                const valor = parseFloat(jogo.valor_por_pessoa);
-                valorCentavos = Math.round(valor * 100);
-                $('#valorPagar').text('R$ ' + valor.toFixed(2));
+                $('#nomeJogador').text(nomeUsuario.toUpperCase());
+                $('#dataJogo').text(formatarData(dataJogo));
+                $('#horarioJogo').text(horaInicio + ' - ' + horaFim);
+                $('#quadraJogo').text(quadraNome);
+                $('#valorPagar').text('R$ ' + valorPagar.toFixed(2));
 
                 // Configurar Stripe Elements
                 const elements = stripe.elements();
@@ -265,57 +475,153 @@
                     }
                 });
 
+                console.log('✅ Stripe Elements montado com sucesso');
+                console.log('🎨 Ocultando loading, mostrando formulário...');
+
                 // Mostrar área de pagamento
                 $('#loadingArea').addClass('hidden');
                 $('#paymentArea').removeClass('hidden');
+                
+                console.log('═══════════════════════════════════════');
+                console.log('🎉 PÁGINA DE PAGAMENTO PRONTA!');
+                console.log('═══════════════════════════════════════');
 
             } catch(e) {
-                alert('❌ Erro: ' + e.message);
+                console.error('═══════════════════════════════════════');
+                console.error('❌ ERRO FATAL ao carregar dados:');
+                console.error('Mensagem:', e.message);
+                console.error('Stack:', e.stack);
+                console.error('═══════════════════════════════════════');
+                showToast('Erro: ' + e.message, 'error');
                 window.location.href = 'index.html';
             }
         }
 
-        // Processar pagamento
-        $('#payment-form').on('submit', async function(e) {
+        // Processar pagamento com cartão
+        document.getElementById('payment-form').addEventListener('submit', async function(e) {
             e.preventDefault();
 
             const btn = $('#btnPagar');
             btn.prop('disabled', true).text('PROCESSANDO...');
 
             try {
-                // Criar Payment Intent (em produção, isso deve ser feito no backend)
+                console.log('🔄 Iniciando pagamento...');
+
+                // Criar Payment Method
                 const { paymentMethod, error } = await stripe.createPaymentMethod({
                     type: 'card',
                     card: cardElement,
-                    billing_details: {
-                        name: inscricaoData.nome_jogador,
-                        phone: inscricaoData.telefone
-                    }
                 });
 
                 if (error) {
                     throw new Error(error.message);
                 }
 
-                // IMPORTANTE: Em produção, você deve criar um endpoint no backend
-                // para criar o Payment Intent e confirmar o pagamento
-                // Por enquanto, vou simular sucesso para teste
+                console.log('✅ Payment Method criado:', paymentMethod.id);
+
+                // ⚠️ IMPORTANTE: Em produção, você deve:
+                // 1. Enviar paymentMethod.id para seu backend
+                // 2. Backend cria Payment Intent no Stripe
+                // 3. Backend confirma pagamento
+                // 4. Backend atualiza Supabase via webhook
                 
-                // Atualizar status no Supabase
-                const { error: updateError } = await supabaseClient
-                    .from('participantes_jogo')
-                    .update({
-                        status_pagamento: 'pago',
-                        data_pagamento: new Date().toISOString()
-                    })
-                    .eq('id', inscricaoId);
+                // 🧪 PARA TESTE: Vamos simular sucesso e atualizar direto
+                // (Em teste, o Stripe não cobra de verdade com cartão 4242...)
+                
+                console.log('💳 Simulando pagamento de R$', valorPagar);
+                
+                // Registrar pagamento na tabela de pagamentos
+                const porcent = 100;
+                const tipoPgto = 'total';
+                const pagamentoInsert = {
+                    user_id: agendamentoData.user_id,
+                    valor_total: valorTotal,
+                    valor_pago: valorPagar,
+                    porcentagem: porcent,
+                    tipo: tipoPgto,
+                    payment_method: 'stripe',
+                    status: 'completed',
+                    stripe_payment_id: paymentMethod.id
+                };
+                
+                // Adicionar ID dependendo do tipo
+                if (tipoAgendamento === 'inscricao') {
+                    pagamentoInsert.agendamento_id = agendamentoId;
+                } else if (tipoAgendamento === 'agendamento') {
+                    pagamentoInsert.agendamento_id = agendamentoId;
+                } else {
+                    pagamentoInsert.reserva_id = agendamentoId;
+                }
+                
+                const { data: pagamentoData, error: pagamentoError } = await supabaseClient
+                    .from('pagamentos')
+                    .insert(pagamentoInsert)
+                    .select()
+                    .single();
 
-                if (updateError) throw updateError;
+                if (pagamentoError) {
+                    console.error('Erro ao registrar pagamento:', pagamentoError);
+                    throw new Error('Erro ao registrar pagamento: ' + pagamentoError.message);
+                }
 
+                console.log('✅ Pagamento registrado:', pagamentoData);
+
+                // Atualizar status dependendo do tipo
+                if (tipoAgendamento === 'inscricao') {
+                    // Atualizar status do participante
+                    const { error: updateError } = await supabaseClient
+                        .from('participantes_jogo')
+                        .update({
+                            status_pagamento: 'pago',
+                            data_pagamento: new Date().toISOString()
+                        })
+                        .eq('id', inscricaoId);
+
+                    if (updateError) {
+                        console.error('Erro ao atualizar participante:', updateError);
+                        throw new Error('Erro ao confirmar participante: ' + updateError.message);
+                    }
+
+                    console.log('✅ Participante atualizado para PAGO!');
+                    
+                } else {
+                    // Atualizar status na tabela correta (agendamentos ou reservas)
+                    const tabelaAtualizar = tipoAgendamento === 'agendamento' ? 'agendamentos' : 'reservas';
+                    
+                    const { error: updateError } = await supabaseClient
+                        .from(tabelaAtualizar)
+                        .update({
+                            status: 'confirmado',
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('id', agendamentoId);
+
+                    if (updateError) {
+                        console.error('Erro ao atualizar:', updateError);
+                        throw new Error('Erro ao confirmar: ' + updateError.message);
+                    }
+
+                    console.log('✅ Agendamento confirmado! Status: confirmado');
+                }
+
+                // Limpar localStorage
+                localStorage.removeItem('reserva_pendente_id');
+                localStorage.removeItem('reserva_pendente_quadra');
+                localStorage.removeItem('reserva_pendente_data');
+                localStorage.removeItem('reserva_pendente_hora');
+                localStorage.removeItem('agendamento_pendente_id');
+                localStorage.removeItem('agendamento_pendente_quadra');
+                localStorage.removeItem('agendamento_pendente_data');
+                localStorage.removeItem('agendamento_pendente_hora');
+                localStorage.removeItem('agendamento_pendente_valor');
+                localStorage.removeItem('agendamento_pendente_modo');
+
+                // Mostrar sucesso
                 mostrarSucesso();
 
             } catch(e) {
-                alert('❌ Erro no pagamento: ' + e.message);
+                console.error('❌ Erro no pagamento:', e);
+                showToast('Erro no pagamento: ' + e.message, 'error');
                 btn.prop('disabled', false).text('🔒 PAGAR AGORA');
             }
         });
@@ -323,6 +629,9 @@
         function mostrarSucesso() {
             $('#loadingArea, #paymentArea').addClass('hidden');
             $('#successArea').removeClass('hidden');
+            
+            // Scroll para o topo
+            window.scrollTo(0, 0);
         }
 
         function formatarData(dataISO) {
@@ -351,23 +660,30 @@
         // Gerar PIX
         async function gerarPix() {
             try {
-                // IMPORTANTE: Em produção, isso deve vir do backend
-                // Por enquanto, vou simular um código PIX
+                console.log('📱 Gerando código PIX...');
                 
-                // Simulação de código PIX
-                const pixCode = `00020126580014br.gov.bcb.pix0136${generateRandomUUID()}52040000530398654${(valorCentavos/100).toFixed(2)}5802BR5925Top Soccer Excellence6009SAO PAULO62070503***6304`;
+                // ⚠️ IMPORTANTE: Em produção, você deve:
+                // 1. Gerar código PIX real via API do seu banco/gateway
+                // 2. Usar Mercado Pago, PagSeguro ou outro gateway
+                // 3. Receber notificação via webhook quando pagar
                 
-                // Gerar QR Code (usando API gratuita)
+                // 🧪 PARA TESTE: Gerando código simulado
+                const pixCode = `00020126580014br.gov.bcb.pix0136${generateRandomUUID()}52040000530398654${valorPagar.toFixed(2)}5802BR5925Top Soccer Excellence6009SAO PAULO62070503***6304`;
+                
+                // Gerar QR Code usando API gratuita
                 const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(pixCode)}`;
                 
                 $('#qrCodeContainer').html(`<img src="${qrCodeUrl}" alt="QR Code PIX">`);
                 $('#pixCode').text(pixCode);
                 
+                console.log('✅ QR Code PIX gerado');
+                
                 // Iniciar verificação de pagamento (simulado)
                 iniciarVerificacaoPix();
                 
             } catch(e) {
-                alert('❌ Erro ao gerar PIX: ' + e.message);
+                console.error('❌ Erro ao gerar PIX:', e);
+                showToast('Erro ao gerar PIX: ' + e.message, 'error');
             }
         }
 
@@ -394,31 +710,95 @@
             });
         }
 
-        // Verificar pagamento PIX (simulado - em produção usa webhook)
+        // Verificar pagamento PIX - consulta o banco para ver se foi pago
         function iniciarVerificacaoPix() {
-            // Em produção, você deve usar webhooks do Stripe
-            // Por enquanto, vou simular aprovação após 10 segundos para teste
+            console.log('🔄 Aguardando confirmação de pagamento PIX...');
             
             let segundos = 0;
+            const tempoLimite = 600; // 10 minutos para pagar
+            
             pixCheckInterval = setInterval(async () => {
                 segundos++;
                 
-                // Simular pagamento após 15 segundos (só para teste!)
-                if (segundos >= 15) {
-                    clearInterval(pixCheckInterval);
+                const minutosRestantes = Math.floor((tempoLimite - segundos) / 60);
+                const segsRestantes = (tempoLimite - segundos) % 60;
+                $('#pixArea p:last').text(`⏱️ Aguardando pagamento... ${minutosRestantes}:${segsRestantes.toString().padStart(2, '0')}`);
+                
+                // A cada 5 segundos, verificar no banco se o pagamento foi registrado
+                if (segundos % 5 === 0) {
+                    console.log('🔍 Verificando status do pagamento no banco...');
                     
-                    // Atualizar status no Supabase
-                    const { error } = await supabaseClient
-                        .from('participantes_jogo')
-                        .update({
-                            status_pagamento: 'pago',
-                            data_pagamento: new Date().toISOString()
-                        })
-                        .eq('id', inscricaoId);
-                    
-                    if (!error) {
-                        mostrarSucesso();
+                    try {
+                        if (tipoAgendamento === 'inscricao') {
+                            // Verificar se participante já foi marcado como pago
+                            const { data: participante } = await supabaseClient
+                                .from('participantes_jogo')
+                                .select('status_pagamento')
+                                .eq('id', inscricaoId)
+                                .single();
+                            
+                            if (participante && participante.status_pagamento === 'pago') {
+                                clearInterval(pixCheckInterval);
+                                console.log('✅ Pagamento PIX confirmado via banco!');
+                                showToast('Pagamento PIX confirmado!', 'success');
+                                mostrarSucesso();
+                                return;
+                            }
+                        } else {
+                            // Verificar se agendamento/reserva mudou para confirmado
+                            const tabela = tipoAgendamento === 'agendamento' ? 'agendamentos' : 'reservas';
+                            const { data: registro } = await supabaseClient
+                                .from(tabela)
+                                .select('status')
+                                .eq('id', agendamentoId)
+                                .single();
+                            
+                            if (registro && (registro.status === 'confirmado' || registro.status === 'concluido')) {
+                                clearInterval(pixCheckInterval);
+                                console.log('✅ Pagamento PIX confirmado via banco!');
+                                
+                                // Limpar localStorage
+                                localStorage.removeItem('reserva_pendente_id');
+                                localStorage.removeItem('reserva_pendente_quadra');
+                                localStorage.removeItem('reserva_pendente_data');
+                                localStorage.removeItem('reserva_pendente_hora');
+                                localStorage.removeItem('agendamento_pendente_id');
+                                localStorage.removeItem('agendamento_pendente_quadra');
+                                localStorage.removeItem('agendamento_pendente_data');
+                                localStorage.removeItem('agendamento_pendente_hora');
+                                localStorage.removeItem('agendamento_pendente_valor');
+                                localStorage.removeItem('agendamento_pendente_modo');
+                                
+                                showToast('Pagamento PIX confirmado!', 'success');
+                                mostrarSucesso();
+                                return;
+                            }
+                        }
+                    } catch(e) {
+                        console.error('Erro ao verificar pagamento:', e);
                     }
+                }
+                
+                // Tempo expirou sem pagamento
+                if (segundos >= tempoLimite) {
+                    clearInterval(pixCheckInterval);
+                    console.log('⏰ Tempo expirado! PIX não foi pago.');
+                    
+                    $('#pixArea').html(`
+                        <div class="pix-area">
+                            <div style="font-size: 60px; margin-bottom: 15px;">⏰</div>
+                            <h2 style="color: #FF0040; margin-bottom: 15px;">TEMPO EXPIRADO</h2>
+                            <p style="color: #888; margin-bottom: 20px;">O código PIX expirou. Nenhum pagamento foi detectado.</p>
+                            <button class="btn" onclick="selectPaymentMethod('pix')" style="margin-bottom: 10px;">
+                                🔄 GERAR NOVO CÓDIGO PIX
+                            </button>
+                            <button class="btn" onclick="selectPaymentMethod('card')" style="background: #333; color: white; box-shadow: none;">
+                                💳 PAGAR COM CARTÃO
+                            </button>
+                        </div>
+                    `);
+                    
+                    showToast('Código PIX expirado. Gere um novo ou pague com cartão.', 'error');
                 }
             }, 1000);
         }

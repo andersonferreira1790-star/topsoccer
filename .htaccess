@@ -1,0 +1,32 @@
+# ========== CACHE BUSTING PERMANENTE ==========
+
+# Desabilitar cache para HTML
+<FilesMatch "\.html$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate, max-age=0"
+    Header set Pragma "no-cache"
+    Header set Expires "-1"
+</FilesMatch>
+
+# Desabilitar cache para JS
+<FilesMatch "\.js$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate, max-age=0"
+    Header set Pragma "no-cache"
+</FilesMatch>
+
+# Desabilitar cache para CSS
+<FilesMatch "\.css$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate, max-age=0"
+    Header set Pragma "no-cache"
+</FilesMatch>
+
+# ========== HEADERS GERAIS ==========
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-XSS-Protection "1; mode=block"
+</IfModule>
+
+# ========== COMPRESSÃO ==========
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
+</IfModule>

@@ -12,40 +12,40 @@
     <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
 
     <style>
-        :root { --arena: #FF4500; --bg: #050505; --card: #111; --success: #39FF14; }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: linear-gradient(135deg, #000 0%, #1a1a1a 100%); color: white; font-family: 'Inter', sans-serif; min-height: 100vh; }
+        :root { --arena: #FF4500; --bg: #050505; --card: #0e0e0e; --card-hover: #131313; --success: #39FF14; --danger: #ff5555; --warn: #FFD700; --info: #00BFFF; --border: rgba(255,255,255,0.04); --text: rgba(255,255,255,0.85); --muted: rgba(255,255,255,0.35); --subtle: rgba(255,255,255,0.08); }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; min-height: 100vh; }
         .font-impact { font-family: 'Archivo Black', sans-serif; text-transform: uppercase; font-style: italic; }
-        
-        .container { max-width: 500px; margin: 0 auto; padding: 20px; }
-        .card { background: var(--card); border-radius: 30px; padding: 30px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
-        
-        .badge { display: inline-block; padding: 8px 16px; border-radius: 20px; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; }
-        .badge-orange { background: rgba(255,69,0,0.2); color: var(--arena); border: 1px solid var(--arena); }
-        .badge-green { background: rgba(57,255,20,0.2); color: var(--success); border: 1px solid var(--success); }
-        
-        .info-row { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .info-label { font-size: 12px; color: #888; text-transform: uppercase; font-weight: 700; }
-        .info-value { font-size: 18px; font-weight: 900; color: white; }
-        
-        input { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 15px; border-radius: 15px; margin-top: 10px; font-size: 14px; transition: 0.3s; }
+
+        .container { max-width: 500px; margin: 0 auto; padding: 24px; }
+        .card { background: var(--card); border-radius: 18px; padding: 28px; border: 1px solid var(--border); margin-bottom: 20px; box-shadow: 0 8px 30px rgba(0,0,0,0.25); }
+
+        .badge { display: inline-block; padding: 7px 14px; border-radius: 14px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+        .badge-orange { background: rgba(255,69,0,0.13); color: var(--arena); border: 1px solid var(--arena); }
+        .badge-green { background: rgba(57,255,20,0.13); color: var(--success); border: 1px solid var(--success); }
+
+        .info-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); }
+        .info-label { font-size: 11px; color: var(--muted); text-transform: uppercase; font-weight: 700; }
+        .info-value { font-size: 17px; font-weight: 800; color: var(--text); }
+
+        input { width: 100%; background: #141414; border: 1px solid var(--border); color: var(--text); padding: 13px; border-radius: 10px; margin-top: 10px; font-size: 13px; font-family: 'Inter', sans-serif; transition: border-color 0.2s; }
         input:focus { outline: none; border-color: var(--arena); background: rgba(255,69,0,0.05); }
-        input::placeholder { color: #666; }
-        
-        .btn { width: 100%; background: var(--arena); color: black; font-weight: 900; text-transform: uppercase; padding: 18px; border-radius: 20px; border: none; font-size: 14px; letter-spacing: 2px; cursor: pointer; transition: 0.3s; box-shadow: 0 0 30px rgba(255,69,0,0.3); }
-        .btn:hover { transform: scale(1.02); box-shadow: 0 0 50px rgba(255,69,0,0.5); }
+        input::placeholder { color: var(--muted); }
+
+        .btn { width: 100%; background: rgba(255,69,0,0.12); color: var(--arena); font-weight: 800; text-transform: uppercase; padding: 15px; border-radius: 12px; border: 1px solid rgba(255,69,0,0.25); font-size: 13px; letter-spacing: 1.5px; cursor: pointer; transition: all 0.2s; }
+        .btn:hover { background: rgba(255,69,0,0.2); }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        
+
         .loading { text-align: center; padding: 50px; }
-        .spinner { width: 50px; height: 50px; border: 4px solid rgba(255,255,255,0.1); border-top-color: var(--arena); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto; }
+        .spinner { width: 38px; height: 38px; border: 3px solid var(--subtle); border-top-color: var(--arena); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        
-        .error { background: rgba(255,0,0,0.2); border: 1px solid #ff0000; color: #ff5555; padding: 15px; border-radius: 15px; text-align: center; font-size: 13px; font-weight: 700; }
-        .success { background: rgba(57,255,20,0.2); border: 1px solid var(--success); color: var(--success); padding: 15px; border-radius: 15px; text-align: center; font-size: 13px; font-weight: 700; }
-        
-        .vagas { text-align: center; padding: 20px; background: rgba(57,255,20,0.1); border-radius: 20px; margin: 20px 0; }
-        .vagas-numero { font-size: 48px; font-weight: 900; color: var(--success); line-height: 1; }
-        .vagas-texto { font-size: 12px; color: #888; text-transform: uppercase; font-weight: 700; margin-top: 5px; }
+
+        .error { background: rgba(255,0,64,0.12); border: 1px solid var(--danger); color: var(--danger); padding: 13px; border-radius: 12px; text-align: center; font-size: 12px; font-weight: 700; }
+        .success { background: rgba(57,255,20,0.12); border: 1px solid var(--success); color: var(--success); padding: 13px; border-radius: 12px; text-align: center; font-size: 12px; font-weight: 700; }
+
+        .vagas { text-align: center; padding: 16px; background: rgba(57,255,20,0.08); border-radius: 14px; margin: 18px 0; border: 1px solid var(--border); }
+        .vagas-numero { font-size: 36px; font-weight: 900; color: var(--success); line-height: 1; }
+        .vagas-texto { font-size: 11px; color: var(--muted); text-transform: uppercase; font-weight: 700; margin-top: 4px; }
     </style>
 </head>
 <body>
@@ -77,7 +77,7 @@
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <span class="badge badge-orange" id="quadraBadge">QUADRA 1</span>
-                    <span class="badge badge-green">🔥 CONFIRMADO</span>
+                    <span class="badge badge-green" id="modoBadge">RACHA</span>
                 </div>
 
                 <h2 class="font-impact" style="font-size: 28px; margin-bottom: 20px;">DETALHES DO JOGO</h2>
@@ -95,15 +95,21 @@
                     <span class="info-value" id="duracaoJogo">--</span>
                 </div>
                 <div class="info-row" style="border: none;">
-                    <span class="info-label">💰 Valor por Pessoa</span>
+                    <span class="info-label" id="valorLabel">💰 Valor por Pessoa</span>
                     <span class="info-value" style="color: var(--success); font-size: 24px;" id="valorPessoa">R$ --</span>
                 </div>
             </div>
 
-            <!-- VAGAS RESTANTES -->
-            <div class="vagas" id="vagasArea">
+            <!-- VAGAS RESTANTES (só racha) -->
+            <div class="vagas" id="vagasArea" style="display: none;">
                 <div class="vagas-numero" id="vagasNumero">5</div>
                 <div class="vagas-texto">Vagas Restantes</div>
+            </div>
+
+            <!-- INFO INDIVIDUAL -->
+            <div id="individualInfo" style="display: none; text-align: center; padding: 20px; background: rgba(255,69,0,0.1); border-radius: 20px; margin: 20px 0; border: 1px solid rgba(255,69,0,0.2);">
+                <div style="font-size: 14px; color: #ccc; font-weight: 700; text-transform: uppercase;">Reserva Individual</div>
+                <div style="font-size: 13px; color: #888; margin-top: 8px;">Confirme seus dados e prossiga para pagamento</div>
             </div>
 
             <!-- FORMULÁRIO -->
@@ -142,12 +148,14 @@
         let supabaseClient = null;
         let agendamentoData = null;
         let conviteId = null;
+        let tipoLink = null; // 'pagamento' ou null (confirmação)
 
         window.onload = async function() {
             try {
-                // Pegar ID da URL
+                // Pegar parâmetros da URL
                 const urlParams = new URLSearchParams(window.location.search);
                 conviteId = urlParams.get('id');
+                tipoLink = urlParams.get('tipo'); // 'pagamento' ou null
 
                 if (!conviteId) {
                     mostrarErro('Link inválido! ID não encontrado na URL.');
@@ -177,34 +185,89 @@
                 return;
             }
 
-            if (!data.racha_ativo) {
-                mostrarErro('Este jogo não está com o sistema de Racha ativado.');
-                return;
-            }
-
             agendamentoData = data;
+            const isRacha = data.racha_ativo;
+            
+            // Determinar modo do link:
+            // 1. Racha → inscrição + pagamento (como antes)
+            // 2. Individual + tipo=pagamento → inscrição + pagamento do valor total
+            // 3. Individual + sem tipo → apenas confirmação de presença (sem pagamento)
+            const isConfirmacaoApenas = !isRacha && tipoLink !== 'pagamento';
+            const isPagamentoIndividual = !isRacha && tipoLink === 'pagamento';
 
-            // Buscar quantos já se inscreveram
-            const { data: inscritos } = await supabaseClient
-                .from('participantes_jogo')
-                .select('id')
-                .eq('agendamento_id', data.id);
+            if (isRacha) {
+                // MODO RACHA: verificar vagas
+                const { data: inscritos } = await supabaseClient
+                    .from('participantes_jogo')
+                    .select('id')
+                    .eq('agendamento_id', data.id);
 
-            const numInscritos = inscritos ? inscritos.length : 0;
-            const vagasRestantes = data.num_jogadores - numInscritos;
+                const numInscritos = inscritos ? inscritos.length : 0;
+                const vagasRestantes = data.num_jogadores - numInscritos;
 
-            if (vagasRestantes <= 0) {
-                mostrarErro('Desculpe! As vagas para este jogo já foram preenchidas.');
-                return;
+                if (vagasRestantes <= 0) {
+                    mostrarErro('Desculpe! As vagas para este jogo já foram preenchidas.');
+                    return;
+                }
+
+                $('#vagasNumero').text(vagasRestantes);
+                $('#vagasArea').show();
+                $('#individualInfo').hide();
+                $('#modoBadge').text('RACHA').removeClass('badge-orange').addClass('badge-green');
+                $('#valorLabel').text('💰 Valor por Pessoa');
+                $('#valorPessoa').text('R$ ' + data.valor_por_pessoa.toFixed(2));
+                
+                // Botão: confirmar e pagar
+                $('#inscricaoForm button[type="submit"]').text('✓ CONFIRMAR E IR PARA PAGAMENTO');
+
+            } else if (isPagamentoIndividual) {
+                // MODO INDIVIDUAL - LINK DE PAGAMENTO
+                const { data: inscritos } = await supabaseClient
+                    .from('participantes_jogo')
+                    .select('id, status_pagamento')
+                    .eq('agendamento_id', data.id);
+
+                const jaPago = inscritos && inscritos.some(p => p.status_pagamento === 'pago');
+                if (jaPago) {
+                    mostrarErro('Este agendamento já foi pago.');
+                    return;
+                }
+
+                $('#vagasArea').hide();
+                $('#individualInfo').show();
+                $('#individualInfo').html(`
+                    <div style="font-size: 14px; color: #ccc; font-weight: 700; text-transform: uppercase;">💳 Link de Pagamento</div>
+                    <div style="font-size: 13px; color: #888; margin-top: 8px;">Preencha seus dados e prossiga para pagamento do valor total</div>
+                `);
+                $('#modoBadge').html('PAGAMENTO').css({background:'rgba(255,69,0,0.2)',color:'var(--arena)',border:'1px solid var(--arena)'});
+                $('#valorLabel').text('💰 Valor Total a Pagar');
+                $('#valorPessoa').text('R$ ' + data.valor_total.toFixed(2));
+                
+                // Botão: confirmar e pagar
+                $('#inscricaoForm button[type="submit"]').text('✓ CONFIRMAR E IR PARA PAGAMENTO');
+
+            } else {
+                // MODO INDIVIDUAL - APENAS CONFIRMAÇÃO DE PRESENÇA
+                $('#vagasArea').hide();
+                $('#individualInfo').show();
+                $('#individualInfo').html(`
+                    <div style="font-size: 14px; color: var(--success); font-weight: 700; text-transform: uppercase;">✅ Confirmação de Presença</div>
+                    <div style="font-size: 13px; color: #888; margin-top: 8px;">Confirme seus dados para garantir sua vaga no jogo. Sem necessidade de pagamento.</div>
+                `);
+                $('#modoBadge').html('CONFIRMAÇÃO').css({background:'rgba(57,255,20,0.15)',color:'var(--success)',border:'1px solid var(--success)'});
+                $('#valorLabel').text('💰 Valor Total do Jogo');
+                $('#valorPessoa').text('R$ ' + data.valor_total.toFixed(2));
+                $('#valorPessoa').css('font-size', '18px').css('color', '#888');
+                
+                // Botão: apenas confirmar (sem pagamento)
+                $('#inscricaoForm button[type="submit"]').text('✓ CONFIRMAR PRESENÇA');
             }
 
-            // Preencher dados na tela
+            // Preencher dados na tela (comum a todos os modos)
             $('#quadraBadge').text(data.sub_recurso.toUpperCase());
             $('#dataJogo').text(formatarData(data.data_jogo));
-            $('#horarioJogo').text(data.hora_inicio);
+            $('#horarioJogo').text(data.hora_inicio + (data.hora_fim ? ' - ' + data.hora_fim : ''));
             $('#duracaoJogo').text(data.duracao + 'h');
-            $('#valorPessoa').text('R$ ' + data.valor_por_pessoa.toFixed(2));
-            $('#vagasNumero').text(vagasRestantes);
 
             // Mostrar conteúdo
             $('#loadingArea').hide();
@@ -233,6 +296,7 @@
             e.preventDefault();
 
             const btn = $(this).find('button[type="submit"]');
+            const textoOriginal = btn.text();
             btn.prop('disabled', true).text('PROCESSANDO...');
 
             const nome = $('#nome').val().trim();
@@ -241,21 +305,26 @@
 
             if (!nome || !telefone) {
                 mostrarMensagem('Preencha nome e telefone!', 'error');
-                btn.prop('disabled', false).text('✓ CONFIRMAR E IR PARA PAGAMENTO');
+                btn.prop('disabled', false).text(textoOriginal);
                 return;
             }
 
             try {
+                const isRacha = agendamentoData.racha_ativo;
+                const isConfirmacaoApenas = !isRacha && tipoLink !== 'pagamento';
+
                 // Inserir na tabela participantes_jogo
+                const participanteInsert = {
+                    agendamento_id: agendamentoData.id,
+                    nome_jogador: nome,
+                    telefone: telefone,
+                    email: email || null,
+                    status_pagamento: isConfirmacaoApenas ? 'isento' : 'pendente'
+                };
+                
                 const { data, error } = await supabaseClient
                     .from('participantes_jogo')
-                    .insert({
-                        agendamento_id: agendamentoData.id,
-                        nome_jogador: nome,
-                        telefone: telefone,
-                        email: email || null,
-                        status_pagamento: 'pendente'
-                    })
+                    .insert(participanteInsert)
                     .select()
                     .single();
 
@@ -263,18 +332,22 @@
                     throw new Error(error.message);
                 }
 
-                mostrarMensagem('✅ Inscrição realizada! Redirecionando para pagamento...', 'success');
-
-                // Aguardar 2 segundos e redirecionar
-                setTimeout(() => {
-                    // TODO: Integrar com Stripe aqui
-                    // Por enquanto, redireciona para página de sucesso
-                    window.location.href = 'pagamento.html?inscricao=' + data.id;
-                }, 2000);
+                if (isConfirmacaoApenas) {
+                    // APENAS CONFIRMAÇÃO: não redirecionar para pagamento
+                    mostrarMensagem('✅ Presença confirmada com sucesso! Você está na lista do jogo.', 'success');
+                    btn.text('✅ PRESENÇA CONFIRMADA').css({background: 'rgba(57,255,20,0.2)', color: 'var(--success)', border: '1px solid var(--success)'});
+                    // Não reativar o botão (já confirmou)
+                } else {
+                    // RACHA ou INDIVIDUAL COM PAGAMENTO: redirecionar para pagamento
+                    mostrarMensagem('✅ Inscrição realizada! Redirecionando para pagamento...', 'success');
+                    setTimeout(() => {
+                        window.location.href = 'pagamento.html?inscricao=' + data.id;
+                    }, 2000);
+                }
 
             } catch(e) {
                 mostrarMensagem('Erro ao inscrever: ' + e.message, 'error');
-                btn.prop('disabled', false).text('✓ CONFIRMAR E IR PARA PAGAMENTO');
+                btn.prop('disabled', false).text(textoOriginal);
             }
         });
     </script>

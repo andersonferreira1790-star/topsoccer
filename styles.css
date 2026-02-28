@@ -242,22 +242,49 @@ body {
     border: 1px solid rgba(255,255,255,0.08);
 }
 
-.time-slot:hover:not(.busy) {
-    border-color: rgba(255,69,0,0.5);
-    background: rgba(255,69,0,0.1);
+/* Disponível (verde claro) */
+.time-slot.disponivel {
+    background: rgba(57, 255, 20, 0.1);
+    border-color: rgba(57, 255, 20, 0.3);
+    color: #39FF14;
 }
 
-.time-slot.busy {
-    opacity: 0.3;
+.time-slot.disponivel:hover {
+    background: rgba(57, 255, 20, 0.2);
+    border-color: #39FF14;
+    transform: scale(1.02);
+}
+
+/* Tem interesse (amarelo) */
+.time-slot.interesse {
+    background: rgba(255, 200, 0, 0.15);
+    border-color: rgba(255, 200, 0, 0.4);
+    color: #FFC800;
+}
+
+.time-slot.interesse:hover {
+    background: rgba(255, 200, 0, 0.25);
+    border-color: #FFC800;
+    transform: scale(1.02);
+}
+
+/* Bloqueado/Confirmado (vermelho) */
+.time-slot.bloqueado {
+    background: rgba(255, 0, 0, 0.15);
+    border-color: rgba(255, 0, 0, 0.4);
+    color: #ff5555;
+    opacity: 0.6;
     text-decoration: line-through;
     pointer-events: none;
-    background: rgba(255,0,0,0.08);
+    cursor: not-allowed;
 }
 
+/* Selecionado (laranja) */
 .time-slot.selected {
     background: var(--arena-color);
-    color: white;
+    color: black;
     border-color: var(--arena-color);
+    transform: scale(1.05);
 }
 
 .input-dark {

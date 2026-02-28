@@ -752,54 +752,14 @@
             const btn = document.querySelector('#paymentModal button');
             btn.innerText = "PROCESSANDO..."; btn.disabled = true;
 
-            const total = state.duracao * state.precoBase;
-            const porJogador = state.modoPagamento === 'racha' ? (total/state.jogadores) : 0;
-            const dataISO = state.data.toISOString().split('T')[0];
-
-            // SEMPRE gerar link de convite (para ambos os modos)
-            let linkConvite = gerarUUID();
-            const urlConvite = window.location.origin + '/convite.html?id=' + linkConvite;
-            
-            console.log('🔗 Link convite gerado:', urlConvite);
-            console.log('🔑 UUID:', linkConvite);
-            
-            // Configurar modal de links
-            document.getElementById('linkDisplay').textContent = urlConvite;
-            state.linkConvitePendente = linkConvite;
-
-            if (state.modoPagamento === 'racha') {
-                console.log('🔀 Modo RACHA - mostrando 1 link');
-                document.getElementById('linkModalTitle').textContent = 'Link de Convite Gerado!';
-                document.getElementById('linkModalDesc').textContent = 'Compartilhe este link com os jogadores para que possam se inscrever e pagar sua parte.';
-                document.getElementById('linkPagamentoArea').style.display = 'none';
-                document.getElementById('linkConviteLabel').textContent = '👥 Link de Convite (jogadores pagam ao se inscrever)';
-                document.getElementById('linkDisplay').style.color = 'var(--success)';
-            } else {
-                console.log('💳 Modo INDIVIDUAL - mostrando 2 links');
-                const urlPagamento = window.location.origin + '/convite.html?id=' + linkConvite + '&tipo=pagamento';
-                console.log('💳 Link pagamento:', urlPagamento);
-                document.getElementById('linkModalTitle').textContent = '2 Links Gerados!';
-                document.getElementById('linkModalDesc').textContent = 'Envie o link de PAGAMENTO para quem vai pagar o jogo inteiro. Envie o link de CONVITE para os demais jogadores confirmarem presença.';
-                document.getElementById('linkPagamentoArea').style.display = 'block';
-                document.getElementById('linkPagamentoDisplay').textContent = urlPagamento;
-                document.getElementById('linkConviteLabel').textContent = '👥 Link de Convite (apenas confirmação de presença)';
-                document.getElementById('linkDisplay').style.color = 'var(--success)';
+            try {
+                // Gerar UUID e já criar o agendamento (só mostra link após salvar no banco)
+                const linkConvite = gerarUUID();
+                await criarAgendamento(linkConvite);
+            } finally {
+                btn.innerText = "✓ CONFIRMAR AGENDAMENTO";
+                btn.disabled = false;
             }
-
-            console.log('📦 Abrindo modal linkModal...');
-            
-            // Fechar o modal de pagamento primeiro
-            $('#paymentModal').removeClass('active');
-            
-            // Abrir o modal de links com delay para não conflitar
-            setTimeout(() => {
-                document.getElementById('linkModal').classList.add('active');
-                console.log('✅ Modal linkModal aberto!');
-            }, 300);
-
-            // Resetar botão
-            btn.innerText = "✓ CONFIRMAR AGENDAMENTO";
-            btn.disabled = false;
         }
 
         async function confirmarReserva() {
@@ -854,12 +814,22 @@
             if (error) { 
                 console.error('❌ Erro ao agendar:', error);
                 showToast('Erro ao agendar: ' + error.message, 'error');
+                const btnPagamento = document.querySelector('#paymentModal button');
+                if (btnPagamento) {
+                    btnPagamento.innerText = "✓ CONFIRMAR AGENDAMENTO";
+                    btnPagamento.disabled = false;
+                }
                 return; // Parar aqui se der erro
             }
             
             if (!data || !data.id) {
                 console.error('❌ Agendamento criado mas sem ID!');
                 showToast('Erro: Agendamento sem ID!', 'error');
+                const btnPagamento = document.querySelector('#paymentModal button');
+                if (btnPagamento) {
+                    btnPagamento.innerText = "✓ CONFIRMAR AGENDAMENTO";
+                    btnPagamento.disabled = false;
+                }
                 return; // Parar se não tiver ID
             }
 

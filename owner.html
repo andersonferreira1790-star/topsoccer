@@ -484,6 +484,62 @@
         </div>
     </div>
 
+    <!-- MODAL REGRAS DE RESERVA (aparece antes dos links no modo individual) -->
+    <div id="regrasReservaModal" class="link-overlay">
+        <div class="link-box" style="padding: 0; overflow: hidden; max-width: 440px;">
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, rgba(255,69,0,0.15), rgba(255,200,0,0.08)); padding: 24px 24px 16px; border-bottom: 1px solid rgba(255,69,0,0.2); text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 8px;">📋</div>
+                <h2 style="color: var(--arena); font-size: 16px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin: 0;">Regras de Reserva</h2>
+                <p style="color: #888; font-size: 11px; margin-top: 6px;">Modo Individual — Leia antes de compartilhar os links</p>
+            </div>
+            <!-- Regra 1: 30% -->
+            <div style="padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.04);">
+                <div style="display: flex; align-items: flex-start; gap: 12px;">
+                    <div style="min-width: 36px; height: 36px; border-radius: 10px; background: rgba(57,255,20,0.1); border: 1px solid rgba(57,255,20,0.3); display: flex; align-items: center; justify-content: center; font-size: 16px;">⚡</div>
+                    <div>
+                        <div style="color: #39FF14; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">Link de Pagamento (30% Entrada)</div>
+                        <ul style="margin: 8px 0 0 0; padding-left: 16px; list-style: none;">
+                            <li style="color: #ccc; font-size: 11px; line-height: 1.7;">✅ Garante a reserva <strong style="color: #39FF14;">IMEDIATA</strong> da quadra</li>
+                            <li style="color: #ccc; font-size: 11px; line-height: 1.7;">✅ O horário fica <strong style="color: #39FF14;">bloqueado</strong> na hora do pagamento</li>
+                            <li style="color: #ccc; font-size: 11px; line-height: 1.7;">✅ Ninguém mais pode reservar esse horário</li>
+                            <li style="color: #ccc; font-size: 11px; line-height: 1.7;">✅ Após pagar 30%, é gerado link para os 70% restantes</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <!-- Regra 2: Valor Total -->
+            <div style="padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.04);">
+                <div style="display: flex; align-items: flex-start; gap: 12px;">
+                    <div style="min-width: 36px; height: 36px; border-radius: 10px; background: rgba(255,200,0,0.1); border: 1px solid rgba(255,200,0,0.3); display: flex; align-items: center; justify-content: center; font-size: 16px;">⚠️</div>
+                    <div>
+                        <div style="color: #FFC800; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">Link de Convite (Sem Pagamento)</div>
+                        <ul style="margin: 8px 0 0 0; padding-left: 16px; list-style: none;">
+                            <li style="color: #ccc; font-size: 11px; line-height: 1.7;">❌ <strong style="color: #FFC800;">NÃO</strong> garante a reserva de imediato</li>
+                            <li style="color: #ccc; font-size: 11px; line-height: 1.7;">❌ O status fica <strong style="color: #FFC800;">AMARELO</strong> (interesse)</li>
+                            <li style="color: #ccc; font-size: 11px; line-height: 1.7;">❌ Outro usuário pode pagar primeiro e reservar o horário</li>
+                            <li style="color: #ccc; font-size: 11px; line-height: 1.7;">❌ Serve para confirmar presença dos demais jogadores</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <!-- Resumo -->
+            <div style="padding: 16px 20px; background: rgba(255,69,0,0.05);">
+                <div style="display: flex; align-items: flex-start; gap: 12px;">
+                    <div style="min-width: 36px; height: 36px; border-radius: 10px; background: rgba(255,69,0,0.1); border: 1px solid rgba(255,69,0,0.3); display: flex; align-items: center; justify-content: center; font-size: 16px;">🏆</div>
+                    <div>
+                        <div style="color: var(--arena); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">Resumo</div>
+                        <p style="color: #aaa; font-size: 11px; line-height: 1.7; margin: 6px 0 0;">A reserva <strong style="color: white;">IMEDIATA</strong> do horário só acontece via pagamento dos <strong style="color: #39FF14;">30% (entrada)</strong>. Sem esse pagamento, o agendamento fica como <strong style="color: #FFC800;">"interesse"</strong> e o horário permanece disponível para outros usuários.</p>
+                    </div>
+                </div>
+            </div>
+            <!-- Botão -->
+            <div style="padding: 16px 20px;">
+                <button onclick="fecharRegrasEMostrarLinks()" style="width: 100%; background: linear-gradient(135deg, var(--arena), #FF6B00); color: white; border: none; padding: 14px; border-radius: 12px; font-size: 13px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.5px; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 15px rgba(255,69,0,0.3);">✅ ENTENDI — VER MEUS LINKS</button>
+            </div>
+        </div>
+    </div>
+
     <!-- LINK RESULT MODAL -->
     <div id="linkResultModal" class="link-overlay">
         <div class="link-box">
@@ -1132,12 +1188,39 @@
         let _linkResultUrl = '';
         let _linkPagamentoUrl = null;
 
+        // Guardar dados pendentes para mostrar após fechar regras
+        let _pendingLinkData = null;
+
+        function fecharRegrasEMostrarLinks() {
+            document.getElementById('regrasReservaModal').classList.remove('active');
+            if (_pendingLinkData) {
+                _exibirLinksResult(_pendingLinkData);
+                _pendingLinkData = null;
+            }
+        }
+
         function mostrarLinkResult(nome, url, quadra, dataJogo, hora, duracao, urlPagamento) {
             _linkResultUrl = url;
             _linkPagamentoUrl = urlPagamento || null;
-            const [a, m, d] = dataJogo.split('-');
+
+            // Modo individual com pagamento: mostrar regras ANTES
+            if (urlPagamento) {
+                _pendingLinkData = { nome, url, quadra, dataJogo, hora, duracao, urlPagamento };
+                document.getElementById('regrasReservaModal').classList.add('active');
+                return;
+            }
+
+            // Racha: mostrar links direto
+            _exibirLinksResult({ nome, url, quadra, dataJogo, hora, duracao, urlPagamento });
+        }
+
+        function _exibirLinksResult(d) {
+            const { nome, url, quadra, dataJogo, hora, duracao, urlPagamento } = d;
+            _linkResultUrl = url;
+            _linkPagamentoUrl = urlPagamento || null;
+            const [a, m, dd] = dataJogo.split('-');
             const duracaoLabel = duracao === Math.floor(duracao) ? `${duracao}h` : `${Math.floor(duracao)}h30`;
-            document.getElementById('linkResultSubtitle').textContent = `${nome} — ${quadra} · ${d}/${m} · ${hora} (${duracaoLabel})`;
+            document.getElementById('linkResultSubtitle').textContent = `${nome} — ${quadra} · ${dd}/${m} · ${hora} (${duracaoLabel})`;
             document.getElementById('linkResultUrl').textContent = url;
 
             // Modo individual: mostrar 2 links

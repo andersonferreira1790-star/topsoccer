@@ -469,31 +469,49 @@ async function criarConta() {
 async function buscarAgendamentos(dataISO) {
     if(!supabaseClient) return;
     try {
-        const { data, error } = await supabaseClient
+        busySlots = [];
+
+        // 1. Buscar da tabela RESERVAS (reservas individuais de quadra)
+        const { data: reservas, error: errReservas } = await supabaseClient
             .from('reservas')
             .select('hora_inicio, status')
             .eq('data', dataISO)
             .eq('quadra', selectedQuadra);
 
-        if(error) {
-            console.error('Erro ao buscar reservas:', error);
-            busySlots = [];
-            renderHorarios();
-            return;
+        if (!errReservas && reservas) {
+            reservas.forEach(d => {
+                busySlots.push({ hora: d.hora_inicio, status: d.status });
+            });
         }
 
-        if(data) {
-            // Mapear para formato {hora, status}
-            busySlots = data.map(d => ({
-                hora: d.hora_inicio,
-                status: d.status
-            }));
-            console.log('📅 Reservas encontradas:', busySlots);
-            renderHorarios();
-        } else {
-            busySlots = [];
-            renderHorarios();
+        // 2. Buscar da tabela AGENDAMENTOS (jogos criados pelo owner/admin)
+        const { data: agendamentos, error: errAgend } = await supabaseClient
+            .from('agendamentos')
+            .select('hora_inicio, hora_fim, status, duracao')
+            .eq('data_jogo', dataISO)
+            .eq('sub_recurso', selectedQuadra)
+            .in('status', ['interesse', 'confirmado', 'concluido']);
+
+        if (!errAgend && agendamentos) {
+            agendamentos.forEach(ag => {
+                // Preencher todos os slots ocupados pela duração do agendamento
+                const [h, m] = ag.hora_inicio.split(':').map(Number);
+                const duracaoSlots = (ag.duracao || 1) * 2; // cada slot = 30min
+                for (let i = 0; i < duracaoSlots; i++) {
+                    const totalMin = h * 60 + m + (i * 30);
+                    const slotH = Math.floor(totalMin / 60).toString().padStart(2, '0');
+                    const slotM = (totalMin % 60).toString().padStart(2, '0');
+                    const slotTime = `${slotH}:${slotM}`;
+                    // Só adicionar se não existir já (reservas tem prioridade)
+                    if (!busySlots.find(s => s.hora === slotTime)) {
+                        busySlots.push({ hora: slotTime, status: ag.status });
+                    }
+                }
+            });
         }
+
+        console.log('📅 Horários ocupados:', busySlots.length, busySlots);
+        renderHorarios();
     } catch(e) {
         console.error('Erro:', e);
         busySlots = [];

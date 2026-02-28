@@ -125,6 +125,8 @@
                     <div class="price-value" id="valorPagar">R$ 0,00</div>
                 </div>
 
+                <div id="etapaInfo"></div>
+
                 <div class="refund-card">
                     <div class="refund-title">⚠️ Política de Extorno</div>
                     <div class="refund-text">
@@ -206,6 +208,8 @@
                     <button class="refund-btn" onclick="abrirWhatsAppExtorno()">💬 Suporte no WhatsApp</button>
                 </div>
                 
+                <div id="saldoArea" style="display: none;"></div>
+
                 <button onclick="window.location.href='index.html'" class="btn" style="margin-top: 30px;">
                     🏠 VOLTAR PARA INÍCIO
                 </button>
@@ -241,7 +245,8 @@
         let tipoAgendamento = null; // 'reserva', 'agendamento' ou 'inscricao'
         let inscricaoId = null; // ID do participante (quando for racha)
         let valorTotal = 75; // Valor padrão (Quadra 1)
-        let valorPagar = 0; // Valor a pagar (100% do valor)
+        let valorPagar = 0; // Valor a pagar
+        let etapaPagamento = null; // 'entrada' (30%), 'saldo' (70%), 'racha' ou null (100%)
         let paymentMethod = 'card'; // 'card' ou 'pix'
         let pixCheckInterval = null;
 
@@ -278,6 +283,7 @@
                 const reservaParam = urlParams.get('reserva');
                 const agendamentoParam = urlParams.get('agendamento');
                 const inscricaoParam = urlParams.get('inscricao');
+                etapaPagamento = urlParams.get('etapa'); // 'entrada', 'saldo', 'racha' ou null
                 
                 console.log('📝 Parâmetros encontrados:', {
                     reserva: reservaParam,
@@ -442,10 +448,26 @@
                     horaInicio = agendamentoData.hora_inicio;
                     horaFim = agendamentoData.hora_fim;
                     valorTotal = parseFloat(agendamentoData.valor_total) || 75;
-                    valorPagar = parseFloat(agendamentoData.valor_por_pessoa); // Jogador paga sua parte
-                    nomeUsuario = participante.nome_jogador; // Nome do participante
+                    nomeUsuario = participante.nome_jogador;
+                    
+                    // Calcular valor baseado na etapa
+                    if (etapaPagamento === 'entrada') {
+                        // INDIVIDUAL: paga 30% de entrada
+                        valorPagar = Math.ceil(valorTotal * 0.30 * 100) / 100;
+                    } else if (etapaPagamento === 'saldo') {
+                        // INDIVIDUAL: paga 70% restante
+                        const valorEntrada = Math.ceil(valorTotal * 0.30 * 100) / 100;
+                        valorPagar = valorTotal - valorEntrada;
+                    } else if (etapaPagamento === 'racha') {
+                        // RACHA: paga sua parte
+                        valorPagar = parseFloat(agendamentoData.valor_por_pessoa);
+                    } else {
+                        // Fallback: valor por pessoa
+                        valorPagar = parseFloat(agendamentoData.valor_por_pessoa) || valorTotal;
+                    }
                     
                     console.log('👤 Jogador inscrito:', nomeUsuario);
+                    console.log('📋 Etapa:', etapaPagamento);
                     
                 } else if (tipoAgendamento === 'agendamento') {
                     // Dados da tabela agendamentos
@@ -455,20 +477,26 @@
                     horaFim = agendamentoData.hora_fim;
                     valorTotal = parseFloat(agendamentoData.valor_total) || 75;
                     
-                    // Paga valor total (individual) ou valor por pessoa (racha)
                     if (agendamentoData.racha_ativo) {
                         valorPagar = parseFloat(agendamentoData.valor_por_pessoa);
                     } else {
                         valorPagar = valorTotal;
                     }
                 } else {
-                    // Dados da tabela reservas
+                    // Dados da tabela reservas — cobra 30% de entrada
                     dataJogo = agendamentoData.data;
                     quadraNome = agendamentoData.quadra;
                     horaInicio = agendamentoData.hora_inicio;
                     horaFim = agendamentoData.hora_fim;
-                    valorTotal = 75; // Valor padrão
-                    valorPagar = valorTotal;
+                    valorTotal = 75;
+                    
+                    if (etapaPagamento === 'saldo') {
+                        const valorEntrada = Math.ceil(valorTotal * 0.30 * 100) / 100;
+                        valorPagar = valorTotal - valorEntrada;
+                    } else {
+                        valorPagar = Math.ceil(valorTotal * 0.30 * 100) / 100; // 30%
+                        etapaPagamento = 'entrada';
+                    }
                 }
 
                 console.log('💰 Valor total:', valorTotal);
@@ -480,6 +508,30 @@
                 $('#horarioJogo').text(horaInicio + ' - ' + horaFim);
                 $('#quadraJogo').text(quadraNome);
                 $('#valorPagar').text('R$ ' + valorPagar.toFixed(2));
+
+                // Mostrar info da etapa de pagamento
+                if (etapaPagamento === 'entrada') {
+                    $('#etapaInfo').html(`
+                        <div style="background: rgba(255,200,0,0.1); border: 1px solid #FFC800; border-radius: 12px; padding: 14px; margin-top: 16px; text-align: center;">
+                            <div style="font-size: 11px; color: #FFC800; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">⚡ Pagamento de Entrada (30%)</div>
+                            <div style="font-size: 12px; color: #aaa; margin-top: 6px;">Após pagar, você receberá o link para o saldo restante (70%: R$ ${(valorTotal - valorPagar).toFixed(2)})</div>
+                        </div>
+                    `);
+                } else if (etapaPagamento === 'saldo') {
+                    $('#etapaInfo').html(`
+                        <div style="background: rgba(57,255,20,0.1); border: 1px solid #39FF14; border-radius: 12px; padding: 14px; margin-top: 16px; text-align: center;">
+                            <div style="font-size: 11px; color: #39FF14; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">✅ Pagamento do Saldo (70%)</div>
+                            <div style="font-size: 12px; color: #aaa; margin-top: 6px;">Entrada já paga. Este é o valor restante para quitar a reserva.</div>
+                        </div>
+                    `);
+                } else if (etapaPagamento === 'racha') {
+                    $('#etapaInfo').html(`
+                        <div style="background: rgba(255,69,0,0.1); border: 1px solid var(--arena); border-radius: 12px; padding: 14px; margin-top: 16px; text-align: center;">
+                            <div style="font-size: 11px; color: var(--arena); font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">⚽ Sua Parte no Racha</div>
+                            <div style="font-size: 12px; color: #aaa; margin-top: 6px;">Valor total do jogo: R$ ${valorTotal.toFixed(2)} ÷ ${agendamentoData.num_jogadores || '?'} jogadores</div>
+                        </div>
+                    `);
+                }
 
                 // Configurar Stripe Elements
                 const elements = stripe.elements();
@@ -561,8 +613,8 @@
                 console.log('💳 Simulando pagamento de R$', valorPagar);
                 
                 // Registrar pagamento na tabela de pagamentos
-                const porcent = 100;
-                const tipoPgto = 'total';
+                const porcent = etapaPagamento === 'entrada' ? 30 : etapaPagamento === 'saldo' ? 70 : 100;
+                const tipoPgto = etapaPagamento || 'total';
                 const pagamentoInsert = {
                     user_id: agendamentoData.user_id,
                     valor_total: valorTotal,
@@ -598,21 +650,65 @@
 
                 // Atualizar status dependendo do tipo
                 if (tipoAgendamento === 'inscricao') {
-                    // Atualizar status do participante
-                    const { error: updateError } = await supabaseClient
-                        .from('participantes_jogo')
-                        .update({
-                            status_pagamento: 'pago',
-                            data_pagamento: new Date().toISOString()
-                        })
-                        .eq('id', inscricaoId);
+                    if (etapaPagamento === 'entrada') {
+                        // ENTRADA 30%: marcar como 'entrada_paga', não como 'pago' total
+                        const { error: updateError } = await supabaseClient
+                            .from('participantes_jogo')
+                            .update({
+                                status_pagamento: 'entrada_paga',
+                                data_pagamento: new Date().toISOString()
+                            })
+                            .eq('id', inscricaoId);
+                        if (updateError) throw new Error('Erro ao confirmar entrada: ' + updateError.message);
 
-                    if (updateError) {
-                        console.error('Erro ao atualizar participante:', updateError);
-                        throw new Error('Erro ao confirmar participante: ' + updateError.message);
+                        // Atualizar agendamento para 'confirmado' (30% pago = horário bloqueado)
+                        await supabaseClient.from('agendamentos').update({
+                            status: 'confirmado',
+                            updated_at: new Date().toISOString()
+                        }).eq('id', agendamentoId);
+
+                        console.log('✅ Entrada 30% paga! Agendamento confirmado.');
+                    } else if (etapaPagamento === 'saldo') {
+                        // SALDO 70%: marcar como 'pago' total
+                        const { error: updateError } = await supabaseClient
+                            .from('participantes_jogo')
+                            .update({
+                                status_pagamento: 'pago',
+                                data_pagamento: new Date().toISOString()
+                            })
+                            .eq('id', inscricaoId);
+                        if (updateError) throw new Error('Erro ao confirmar saldo: ' + updateError.message);
+                        console.log('✅ Saldo 70% pago! Reserva quitada.');
+                    } else {
+                        // RACHA ou outro: marcar como pago direto
+                        const { error: updateError } = await supabaseClient
+                            .from('participantes_jogo')
+                            .update({
+                                status_pagamento: 'pago',
+                                data_pagamento: new Date().toISOString()
+                            })
+                            .eq('id', inscricaoId);
+                        if (updateError) throw new Error('Erro ao confirmar participante: ' + updateError.message);
+
+                        // RACHA: acumular total_pago consultando tabela pagamentos
+                        if (etapaPagamento === 'racha') {
+                            // Somar todos os pagamentos já feitos para este agendamento
+                            const { data: pgtos } = await supabaseClient
+                                .from('pagamentos')
+                                .select('valor_pago')
+                                .eq('agendamento_id', agendamentoId);
+                            
+                            const totalPagoAtual = (pgtos || []).reduce((sum, p) => sum + parseFloat(p.valor_pago || 0), 0);
+                            const metaEntrada = valorTotal * 0.30;
+                            const novoStatus = totalPagoAtual >= metaEntrada ? 'confirmado' : agendamentoData.status;
+                            await supabaseClient.from('agendamentos').update({
+                                status: novoStatus,
+                                updated_at: new Date().toISOString()
+                            }).eq('id', agendamentoId);
+                            console.log(`✅ Racha: total_pago = R$${totalPagoAtual.toFixed(2)}, meta 30% = R$${metaEntrada.toFixed(2)}, status = ${novoStatus}`);
+                        }
                     }
-
-                    console.log('✅ Participante atualizado para PAGO!');
+                    console.log('✅ Participante atualizado!');
                     
                 } else {
                     // Atualizar status na tabela correta (agendamentos ou reservas)
@@ -649,6 +745,23 @@
                 // Mostrar sucesso
                 mostrarSucesso();
 
+                // Se foi entrada 30%, gerar link de saldo 70%
+                if (etapaPagamento === 'entrada' && inscricaoId) {
+                    const linkSaldo = window.location.origin + '/pagamento.html?inscricao=' + inscricaoId + '&etapa=saldo';
+                    $('#saldoArea').html(`
+                        <div style="background: rgba(255,200,0,0.08); border: 1px solid #FFC800; border-radius: 16px; padding: 20px; margin-top: 20px; text-align: center;">
+                            <div style="font-size: 11px; color: #FFC800; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">🔗 Link para Pagar o Saldo (70%)</div>
+                            <div style="font-size: 12px; color: #ccc; margin-bottom: 12px;">Valor restante: <strong style="color: #FFC800;">R$ ${(valorTotal - valorPagar).toFixed(2)}</strong></div>
+                            <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; font-size: 11px; color: #aaa; word-break: break-all; margin-bottom: 12px;" id="linkSaldoUrl">${linkSaldo}</div>
+                            <div style="display: flex; gap: 8px;">
+                                <button onclick="navigator.clipboard.writeText('${linkSaldo}').then(()=>showToast('Link copiado!','success'))" style="flex:1; background: rgba(255,200,0,0.15); border: 1px solid #FFC800; color: #FFC800; padding: 10px; border-radius: 10px; font-size: 11px; font-weight: 800; cursor: pointer;">📋 COPIAR</button>
+                                <button onclick="window.open('https://wa.me/?text='+encodeURIComponent('💰 Pague o saldo restante (70%) aqui:\n${linkSaldo}'),'_blank')" style="flex:1; background: rgba(57,255,20,0.15); border: 1px solid #39FF14; color: #39FF14; padding: 10px; border-radius: 10px; font-size: 11px; font-weight: 800; cursor: pointer;">📱 WHATSAPP</button>
+                            </div>
+                            <p style="font-size: 10px; color: #666; margin-top: 10px;">Envie este link para pagar os 70% restantes antes do jogo</p>
+                        </div>
+                    `).show();
+                }
+
             } catch(e) {
                 console.error('❌ Erro no pagamento:', e);
                 showToast('Erro no pagamento: ' + e.message, 'error');
@@ -659,6 +772,21 @@
         function mostrarSucesso() {
             $('#loadingArea, #paymentArea').addClass('hidden');
             $('#successArea').removeClass('hidden');
+
+            // Atualizar texto de sucesso baseado na etapa
+            if (etapaPagamento === 'entrada') {
+                $('#successArea h1').text('ENTRADA 30% CONFIRMADA!');
+                $('#successArea .info-value').first().text('✅ ENTRADA PAGA (30%)');
+                $('#successArea p').first().text('Falta pagar o saldo de 70% para quitar a reserva. Veja o link abaixo.');
+            } else if (etapaPagamento === 'saldo') {
+                $('#successArea h1').text('RESERVA 100% QUITADA!');
+                $('#successArea .info-value').first().text('✅ TOTALMENTE PAGO');
+                $('#successArea p').first().text('Pagamento completo! Sua vaga está garantida! 🎉');
+            } else if (etapaPagamento === 'racha') {
+                $('#successArea h1').text('PAGAMENTO CONFIRMADO!');
+                $('#successArea .info-value').first().text('✅ SUA PARTE PAGA');
+                $('#successArea p').first().text('Sua parte no racha foi paga! Nos vemos em campo! ⚽');
+            }
             
             // Scroll para o topo
             window.scrollTo(0, 0);
@@ -767,11 +895,24 @@
                                 .eq('id', inscricaoId)
                                 .single();
                             
-                            if (participante && participante.status_pagamento === 'pago') {
+                            if (participante && (participante.status_pagamento === 'pago' || participante.status_pagamento === 'entrada_paga')) {
                                 clearInterval(pixCheckInterval);
                                 console.log('✅ Pagamento PIX confirmado via banco!');
                                 showToast('Pagamento PIX confirmado!', 'success');
                                 mostrarSucesso();
+
+                                // Se foi entrada, gerar link de saldo
+                                if (participante.status_pagamento === 'entrada_paga' && inscricaoId) {
+                                    const linkSaldo = window.location.origin + '/pagamento.html?inscricao=' + inscricaoId + '&etapa=saldo';
+                                    $('#saldoArea').html(`
+                                        <div style="background: rgba(255,200,0,0.08); border: 1px solid #FFC800; border-radius: 16px; padding: 20px; margin-top: 20px; text-align: center;">
+                                            <div style="font-size: 11px; color: #FFC800; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">🔗 Link para Pagar o Saldo (70%)</div>
+                                            <div style="font-size: 12px; color: #ccc; margin-bottom: 12px;">Valor restante: <strong style="color: #FFC800;">R$ ${(valorTotal - valorPagar).toFixed(2)}</strong></div>
+                                            <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; font-size: 11px; color: #aaa; word-break: break-all; margin-bottom: 12px;">${linkSaldo}</div>
+                                            <button onclick="navigator.clipboard.writeText('${linkSaldo}').then(()=>showToast('Link copiado!','success'))" style="width:100%; background: rgba(255,200,0,0.15); border: 1px solid #FFC800; color: #FFC800; padding: 10px; border-radius: 10px; font-size: 11px; font-weight: 800; cursor: pointer;">📋 COPIAR LINK DO SALDO</button>
+                                        </div>
+                                    `).show();
+                                }
                                 return;
                             }
                         } else {

@@ -362,11 +362,17 @@
                     mostrarMensagem('✅ Presença confirmada com sucesso! Você está na lista do jogo.', 'success');
                     btn.text('✅ PRESENÇA CONFIRMADA').css({background: 'rgba(57,255,20,0.2)', color: 'var(--success)', border: '1px solid var(--success)'});
                     // Não reativar o botão (já confirmou)
+                } else if (!isRacha && tipoLink === 'pagamento') {
+                    // INDIVIDUAL COM PAGAMENTO: cobrar 30% de entrada
+                    mostrarMensagem('✅ Inscrição realizada! Redirecionando para pagamento da entrada (30%)...', 'success');
+                    setTimeout(() => {
+                        window.location.href = 'pagamento.html?inscricao=' + data.id + '&etapa=entrada';
+                    }, 2000);
                 } else {
-                    // RACHA ou INDIVIDUAL COM PAGAMENTO: redirecionar para pagamento
+                    // RACHA: cada jogador paga sua parte
                     mostrarMensagem('✅ Inscrição realizada! Redirecionando para pagamento...', 'success');
                     setTimeout(() => {
-                        window.location.href = 'pagamento.html?inscricao=' + data.id;
+                        window.location.href = 'pagamento.html?inscricao=' + data.id + '&etapa=racha';
                     }, 2000);
                 }
 

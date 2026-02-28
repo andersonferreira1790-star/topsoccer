@@ -48,6 +48,12 @@
         .price-display { text-align: center; padding: 30px; background: rgba(255,69,0,0.1); border-radius: 20px; margin: 25px 0; border: 2px dashed var(--arena); }
         .price-label { font-size: 12px; color: #888; text-transform: uppercase; font-weight: 700; margin-bottom: 10px; }
         .price-value { font-size: 48px; font-weight: 900; color: var(--arena); line-height: 1; }
+
+        .refund-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,69,0,0.25); border-radius: 16px; padding: 16px; margin-top: 16px; }
+        .refund-title { font-size: 12px; font-weight: 900; text-transform: uppercase; color: var(--arena); margin-bottom: 8px; letter-spacing: 1px; }
+        .refund-text { font-size: 12px; color: #aaa; line-height: 1.6; margin-bottom: 12px; text-align: left; }
+        .refund-btn { width: 100%; background: rgba(57,255,20,0.12); border: 1px solid rgba(57,255,20,0.35); color: var(--success); border-radius: 12px; padding: 12px; font-size: 12px; font-weight: 900; text-transform: uppercase; cursor: pointer; }
+        .refund-btn:hover { background: rgba(57,255,20,0.2); }
         
         /* Stripe Elements */
         #card-element { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 15px; border-radius: 15px; margin: 20px 0; }
@@ -118,6 +124,15 @@
                     <div class="price-label">💰 Valor a Pagar</div>
                     <div class="price-value" id="valorPagar">R$ 0,00</div>
                 </div>
+
+                <div class="refund-card">
+                    <div class="refund-title">⚠️ Política de Extorno</div>
+                    <div class="refund-text">
+                        Se houver desistência, cancelamento ou qualquer solicitação de extorno,
+                        fale diretamente com o dono no WhatsApp para análise e resolução do caso.
+                    </div>
+                    <button class="refund-btn" onclick="abrirWhatsAppExtorno()">💬 Falar com o dono</button>
+                </div>
             </div>
 
             <div class="card">
@@ -181,6 +196,15 @@
                         <span class="info-value" style="color: var(--success);">✅ PAGO</span>
                     </div>
                 </div>
+
+                <div class="refund-card">
+                    <div class="refund-title">⚠️ Dúvidas sobre extorno</div>
+                    <div class="refund-text">
+                        Em caso de desistência após o pagamento, entre em contato com o dono
+                        para tratar o extorno no particular.
+                    </div>
+                    <button class="refund-btn" onclick="abrirWhatsAppExtorno()">💬 Suporte no WhatsApp</button>
+                </div>
                 
                 <button onclick="window.location.href='index.html'" class="btn" style="margin-top: 30px;">
                     🏠 VOLTAR PARA INÍCIO
@@ -207,6 +231,7 @@
         const SUPABASE_URL = 'https://ibchbcxtzngihxjschgl.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImliY2hiY3h0em5naWh4anNjaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk3MTYyNzYsImV4cCI6MjA4NTI5MjI3Nn0.ybBzyBWFQIvw6EV3F_xQwvXHJBX7wTsm05xEgRqsu34';
         const STRIPE_PUBLISHABLE_KEY = 'pk_test_51T4ndfAMRrzQseDW49v6yerBz3XTEMHDPHH5gDOtcUmroqD9HHaJX39P6Olom5nV5SB9NSBpWO0YAXix80OrYZjy00drvOmETA';
+        const OWNER_WHATSAPP = '5517999999999';
 
         let supabaseClient = null;
         let stripe = null;
@@ -219,6 +244,11 @@
         let valorPagar = 0; // Valor a pagar (100% do valor)
         let paymentMethod = 'card'; // 'card' ou 'pix'
         let pixCheckInterval = null;
+
+        function abrirWhatsAppExtorno() {
+            const mensagem = encodeURIComponent('Olá! Preciso de suporte sobre cancelamento/extorno de pagamento no Top Soccer.');
+            window.open(`https://wa.me/${OWNER_WHATSAPP}?text=${mensagem}`, '_blank');
+        }
 
         window.onload = async function() {
             console.log('🔄 Página de pagamento carregando...');

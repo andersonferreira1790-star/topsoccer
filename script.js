@@ -1,6 +1,6 @@
 // ===== CONFIGURAÇÃO SUPABASE =====
-const SUPABASE_URL = 'https://ibchbcxtzngihxjschgl.supabase.co'; 
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImliY2hiY3h0em5naWh4anNjaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk3MTYyNzYsImV4cCI6MjA4NTI5MjI3Nn0.ybBzyBWFQIvw6EV3F_xQwvXHJBX7wTsm05xEgRqsu34'; 
+const SUPABASE_URL = 'https://dvsiplkpvdqlslgwdfgp.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2c2lwbGtwdmRxbHNsZ3dkZmdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzNTI3NTEsImV4cCI6MjA5ODkyODc1MX0.GyXI8iMA1Qtf8m_VV3NKZy2zd_hb0zLds0vCbjnhUSI';
 
 var supabaseClient = null;
 let currentUser = null;
